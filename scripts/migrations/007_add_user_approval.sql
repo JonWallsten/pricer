@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN is_approved TINYINT(1) NOT NULL DEFAULT 0 AFTER picture_url;

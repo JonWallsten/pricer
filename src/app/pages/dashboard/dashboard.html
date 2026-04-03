@@ -1,0 +1,131 @@
+@if (loading()) {
+    <div class="spinner-wrap">
+        <mat-spinner diameter="40"></mat-spinner>
+    </div>
+} @else {
+    <div class="dashboard">
+        @if (products().length === 0) {
+            <div class="empty-state">
+                <mat-icon class="empty-icon">shopping_cart</mat-icon>
+                <h2>{{ i18n.strings().noProducts }}</h2>
+                <p>{{ i18n.strings().noProductsHint }}</p>
+                <button mat-flat-button color="primary" (click)="addProduct()">
+                    <mat-icon>add</mat-icon>
+                    {{ i18n.strings().addProduct }}
+                </button>
+            </div>
+        } @else {
+            <div class="product-list">
+                @for (product of products(); track product.id) {
+                    <mat-card
+                        class="product-card"
+                        (click)="goToProduct(product.id)"
+                        tabindex="0"
+                        (keydown.enter)="goToProduct(product.id)"
+                        role="button"
+                        [attr.aria-label]="product.name"
+                    >
+                        <mat-card-header>
+                            @if (product.image_url) {
+                                <img
+                                    mat-card-avatar
+                                    [src]="product.image_url"
+                                    [alt]="product.name"
+                                    class="product-image"
+                                    referrerpolicy="no-referrer"
+                                />
+                            }
+                            <mat-card-title>{{ product.name }}</mat-card-title>
+                            <div class="price-badge">
+                                @if (product.current_price !== null) {
+                                    <span class="price">{{
+                                        formatPrice(product.current_price, product.currency)
+                                    }}</span>
+                                } @else {
+                                    <span class="price price--unknown">—</span>
+                                }
+                            </div>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <div class="product-meta">
+                                <span
+                                    class="status"
+                                    [class.status--success]="
+                                        product.last_check_status === 'success'
+                                    "
+                                    [class.status--error]="product.last_check_status === 'error'"
+                                    [class.status--pending]="
+                                        product.last_check_status === 'pending'
+                                    "
+                                >
+                                    @switch (product.last_check_status) {
+                                        @case ('success') {
+                                            {{ i18n.strings().statusSuccess }}
+                                        }
+                                        @case ('error') {
+                                            {{ i18n.strings().statusError }}
+                                        }
+                                        @default {
+                                            {{ i18n.strings().statusPending }}
+                                        }
+                                    }
+                                </span>
+                                @if (product.availability && product.availability !== 'unknown') {
+                                    <span
+                                        class="availability-badge"
+                                        [class.availability--in-stock]="
+                                            product.availability === 'in_stock'
+                                        "
+                                        [class.availability--out-of-stock]="
+                                            product.availability === 'out_of_stock'
+                                        "
+                                        [class.availability--preorder]="
+                                            product.availability === 'preorder'
+                                        "
+                                    >
+                                        @switch (product.availability) {
+                                            @case ('in_stock') {
+                                                {{ i18n.strings().inStock }}
+                                            }
+                                            @case ('out_of_stock') {
+                                                {{ i18n.strings().outOfStock }}
+                                            }
+                                            @case ('preorder') {
+                                                {{ i18n.strings().preorder }}
+                                            }
+                                        }
+                                    </span>
+                                }
+                                <span class="checked-at">
+                                    @if (product.last_checked_at) {
+                                        {{ product.last_checked_at | timeAgo: i18n.strings() }}
+                                    } @else {
+                                        {{ i18n.strings().neverChecked }}
+                                    }
+                                </span>
+                                @if (product.active_alerts) {
+                                    <mat-chip-set>
+                                        <mat-chip>
+                                            <mat-icon matChipAvatar>notifications_active</mat-icon>
+                                            {{ product.active_alerts }}
+                                            {{ i18n.strings().activeAlerts }}
+                                        </mat-chip>
+                                    </mat-chip-set>
+                                }
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                }
+            </div>
+
+            <button
+                mat-fab
+                class="fab"
+                (click)="addProduct()"
+                [attr.aria-label]="i18n.strings().addProduct"
+            >
+                <mat-icon>add</mat-icon>
+            </button>
+        }
+    </div>
+}

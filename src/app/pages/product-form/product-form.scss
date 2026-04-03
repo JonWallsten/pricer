@@ -1,0 +1,130 @@
+.form-container {
+    padding: 16px;
+    max-width: 540px;
+    margin: 0 auto;
+}
+
+.product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.fetching-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: light-dark(#e3f2fd, #1a2733);
+    color: light-dark(#1565c0, #90caf9);
+    font-size: 14px;
+}
+
+.preview-card {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--mat-sys-surface-container);
+    align-items: center;
+}
+
+.preview-image {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.preview-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.preview-price {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--mat-sys-primary);
+}
+
+.preview-method {
+    font-size: 12px;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.preview-error {
+    font-size: 13px;
+    color: var(--mat-sys-error);
+}
+
+.availability-badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 12px;
+    width: fit-content;
+
+    &.availability--in-stock {
+        background: light-dark(#e8f5e9, #1b3a1f);
+        color: light-dark(#2e7d32, #81c784);
+    }
+
+    &.availability--out-of-stock {
+        background: light-dark(#ffebee, #3e1214);
+        color: light-dark(#c62828, #ef9a9a);
+    }
+
+    &.availability--preorder {
+        background: light-dark(#fff3e0, #3e2700);
+        color: light-dark(#e65100, #ffb74d);
+    }
+}
+
+.alert-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--mat-sys-surface-container);
+
+    h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--mat-sys-on-surface-variant);
+    }
+}
+
+.discount-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.chip-selected {
+    background: var(--mat-sys-primary) !important;
+    color: var(--mat-sys-on-primary) !important;
+}
+
+.target-preview {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--mat-sys-primary);
+}
+
+.error-msg {
+    color: var(--mat-sys-error);
+    font-size: 14px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}

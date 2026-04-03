@@ -1,0 +1,19 @@
+<div class="pending-container">
+    <mat-card class="pending-card">
+        <mat-card-header>
+            <mat-card-title>
+                <mat-icon class="pending-icon">hourglass_empty</mat-icon>
+                {{ i18n.strings().pendingApproval }}
+            </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p>{{ i18n.strings().pendingApprovalMessage }}</p>
+        </mat-card-content>
+        <mat-card-actions>
+            <button mat-stroked-button (click)="auth.logout()">
+                <mat-icon>logout</mat-icon>
+                {{ i18n.strings().logout }}
+            </button>
+        </mat-card-actions>
+    </mat-card>
+</div>

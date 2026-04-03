@@ -1,0 +1,76 @@
+.admin-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px;
+
+    h2 {
+        margin-bottom: 16px;
+        color: var(--mat-sys-on-surface);
+    }
+}
+
+.spinner-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 48px 0;
+}
+
+.user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.user-card {
+    mat-card-header {
+        margin-bottom: 12px;
+
+        img {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+        }
+    }
+
+    mat-card-actions {
+        padding: 8px 16px 16px;
+        display: flex;
+        gap: 8px;
+    }
+}
+
+.user-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+    }
+}
+
+.user-status {
+    display: flex;
+    align-items: center;
+}
+
+.chip-approved {
+    --mdc-chip-label-text-color: var(--mat-sys-on-tertiary-container);
+    --mdc-chip-elevated-container-color: var(--mat-sys-tertiary-container);
+}
+
+.chip-pending {
+    --mdc-chip-label-text-color: var(--mat-sys-on-error-container);
+    --mdc-chip-elevated-container-color: var(--mat-sys-error-container);
+}

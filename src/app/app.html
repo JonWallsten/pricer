@@ -1,0 +1,63 @@
+@if (auth.loading()) {
+    <div class="app-loading">
+        <mat-spinner diameter="40"></mat-spinner>
+    </div>
+} @else {
+    <mat-toolbar color="primary">
+        <span class="toolbar-title">🏷️ {{ i18n.strings().appName }}</span>
+        <span class="spacer"></span>
+        @if (auth.user()?.is_admin) {
+            <button
+                mat-icon-button
+                routerLink="/admin"
+                [attr.aria-label]="i18n.strings().adminUsers"
+                [title]="i18n.strings().adminUsers"
+            >
+                <mat-icon>admin_panel_settings</mat-icon>
+            </button>
+        }
+        <button
+            class="topbar-icon-btn"
+            type="button"
+            [attr.aria-label]="i18n.strings().toggleTheme"
+            [title]="i18n.strings().toggleTheme"
+            (click)="toggleTheme()"
+        >
+            {{ themeIcon() }}
+        </button>
+        @if (auth.user(); as user) {
+            <button
+                mat-icon-button
+                [matMenuTriggerFor]="userMenu"
+                [attr.aria-label]="i18n.strings().logout"
+                class="avatar-btn"
+            >
+                @if (user.picture_url) {
+                    <img
+                        [src]="user.picture_url"
+                        [alt]="user.name"
+                        class="avatar"
+                        referrerpolicy="no-referrer"
+                    />
+                } @else {
+                    <mat-icon class="avatar-icon">account_circle</mat-icon>
+                }
+            </button>
+            <mat-menu #userMenu="matMenu">
+                <div class="menu-user-info" mat-menu-item disabled>
+                    <strong>{{ user.name }}</strong>
+                    <br />
+                    <small>{{ user.email }}</small>
+                </div>
+                <button mat-menu-item (click)="auth.logout()">
+                    <mat-icon>logout</mat-icon>
+                    <span>{{ i18n.strings().logout }}</span>
+                </button>
+            </mat-menu>
+        }
+    </mat-toolbar>
+
+    <main>
+        <router-outlet />
+    </main>
+}

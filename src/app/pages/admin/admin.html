@@ -1,0 +1,79 @@
+<div class="admin-container">
+    <h2>{{ i18n.strings().adminUsers }}</h2>
+
+    @if (loading()) {
+        <div class="spinner-wrap">
+            <mat-spinner diameter="36"></mat-spinner>
+        </div>
+    } @else {
+        <div class="user-list">
+            @for (user of users(); track user.id) {
+                <mat-card class="user-card">
+                    <mat-card-header>
+                        @if (user.picture_url) {
+                            <img
+                                mat-card-avatar
+                                [src]="user.picture_url"
+                                [alt]="user.name"
+                                referrerpolicy="no-referrer"
+                            />
+                        }
+                        <mat-card-title>{{ user.name }}</mat-card-title>
+                        <mat-card-subtitle>{{ user.email }}</mat-card-subtitle>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <div class="user-meta">
+                            <span class="meta-item">
+                                <mat-icon>calendar_today</mat-icon>
+                                {{ i18n.strings().userJoined }}:
+                                {{ user.created_at | timeAgo: i18n.strings() }}
+                            </span>
+                            @if (user.last_login_at) {
+                                <span class="meta-item">
+                                    <mat-icon>login</mat-icon>
+                                    {{ i18n.strings().userLastLogin }}:
+                                    {{ user.last_login_at | timeAgo: i18n.strings() }}
+                                </span>
+                            }
+                        </div>
+                        <div class="user-status">
+                            @if (user.is_admin) {
+                                <mat-chip-set>
+                                    <mat-chip highlighted>{{ i18n.strings().admin }}</mat-chip>
+                                </mat-chip-set>
+                            } @else if (user.is_approved) {
+                                <mat-chip-set>
+                                    <mat-chip class="chip-approved">{{
+                                        i18n.strings().approved
+                                    }}</mat-chip>
+                                </mat-chip-set>
+                            } @else {
+                                <mat-chip-set>
+                                    <mat-chip class="chip-pending">{{
+                                        i18n.strings().pending
+                                    }}</mat-chip>
+                                </mat-chip-set>
+                            }
+                        </div>
+                    </mat-card-content>
+                    @if (!user.is_admin) {
+                        <mat-card-actions>
+                            @if (!user.is_approved) {
+                                <button mat-flat-button color="primary" (click)="approve(user)">
+                                    <mat-icon>check_circle</mat-icon>
+                                    {{ i18n.strings().approve }}
+                                </button>
+                            }
+                            @if (user.is_approved) {
+                                <button mat-stroked-button (click)="reject(user)">
+                                    <mat-icon>block</mat-icon>
+                                    {{ i18n.strings().reject }}
+                                </button>
+                            }
+                        </mat-card-actions>
+                    }
+                </mat-card>
+            }
+        </div>
+    }
+</div>

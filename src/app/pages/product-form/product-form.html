@@ -1,0 +1,155 @@
+<div class="form-container">
+    <mat-card>
+        <mat-card-header>
+            <mat-card-title>
+                @if (isEdit()) {
+                    {{ i18n.strings().editProduct }}
+                } @else {
+                    {{ i18n.strings().addProduct }}
+                }
+            </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <form [formGroup]="form" (ngSubmit)="save()" class="product-form">
+                <mat-form-field appearance="outline">
+                    <mat-label>{{ i18n.strings().productUrl }}</mat-label>
+                    <input
+                        matInput
+                        formControlName="url"
+                        type="url"
+                        placeholder="https://..."
+                        autocomplete="off"
+                    />
+                    @if (form.controls.url.hasError('required')) {
+                        <mat-error>{{ i18n.strings().required }}</mat-error>
+                    } @else if (form.controls.url.hasError('pattern')) {
+                        <mat-error>{{ i18n.strings().invalidUrl }}</mat-error>
+                    }
+                </mat-form-field>
+
+                @if (fetching()) {
+                    <div class="fetching-banner">
+                        <mat-spinner diameter="18"></mat-spinner>
+                        <span>{{ i18n.strings().fetchingPrice }}</span>
+                    </div>
+                }
+
+                @if (preview(); as prev) {
+                    <div class="preview-card">
+                        @if (prev.image_url) {
+                            <img
+                                [src]="prev.image_url"
+                                class="preview-image"
+                                alt=""
+                                referrerpolicy="no-referrer"
+                            />
+                        }
+                        <div class="preview-info">
+                            @if (prev.price !== null) {
+                                <span class="preview-price">{{
+                                    formatPrice(prev.price, prev.currency)
+                                }}</span>
+                                <span class="preview-method"
+                                    >{{ prev.method }} · {{ i18n.strings().autoDetected }}</span
+                                >
+                            } @else if (prev.error) {
+                                <span class="preview-error">{{ prev.error }}</span>
+                            }
+                            @if (prev.availability && prev.availability !== 'unknown') {
+                                <span
+                                    class="availability-badge"
+                                    [class.availability--in-stock]="
+                                        prev.availability === 'in_stock'
+                                    "
+                                    [class.availability--out-of-stock]="
+                                        prev.availability === 'out_of_stock'
+                                    "
+                                    [class.availability--preorder]="
+                                        prev.availability === 'preorder'
+                                    "
+                                >
+                                    @switch (prev.availability) {
+                                        @case ('in_stock') {
+                                            {{ i18n.strings().inStock }}
+                                        }
+                                        @case ('out_of_stock') {
+                                            {{ i18n.strings().outOfStock }}
+                                        }
+                                        @case ('preorder') {
+                                            {{ i18n.strings().preorder }}
+                                        }
+                                    }
+                                </span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <mat-form-field appearance="outline">
+                    <mat-label>{{ i18n.strings().productName }}</mat-label>
+                    <input matInput formControlName="name" autocomplete="off" />
+                    @if (form.controls.name.hasError('required')) {
+                        <mat-error>{{ i18n.strings().required }}</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>{{ i18n.strings().cssSelector }}</mat-label>
+                    <input
+                        matInput
+                        formControlName="css_selector"
+                        placeholder=".price-current"
+                        autocomplete="off"
+                        (blur)="formatSelectorOnBlur()"
+                    />
+                    <mat-hint>{{ i18n.strings().cssSelectorHint }}</mat-hint>
+                </mat-form-field>
+
+                @if (!isEdit() && preview()?.price; as previewPrice) {
+                    <div class="alert-section">
+                        <h3>{{ i18n.strings().notifyWhenDropsTo }}</h3>
+                        <div class="discount-chips">
+                            @for (pct of discountOptions; track pct) {
+                                <button
+                                    mat-stroked-button
+                                    type="button"
+                                    [class.chip-selected]="selectedDiscount() === pct"
+                                    (click)="selectDiscount(pct)"
+                                >
+                                    -{{ pct }}%
+                                </button>
+                            }
+                        </div>
+                        @if (targetPrice(); as tp) {
+                            <div class="target-preview">
+                                {{ i18n.strings().targetPrice }}: {{ formatPrice(tp) }}
+                            </div>
+                        }
+                        <mat-checkbox
+                            [checked]="notifyBackInStock()"
+                            (change)="notifyBackInStock.set($event.checked)"
+                        >
+                            {{ i18n.strings().notifyBackInStock }}
+                        </mat-checkbox>
+                    </div>
+                }
+
+                @if (errorMsg()) {
+                    <div class="error-msg">{{ errorMsg() }}</div>
+                }
+
+                <div class="actions">
+                    <button mat-button type="button" (click)="goBack()">
+                        {{ i18n.strings().cancel }}
+                    </button>
+                    <button mat-flat-button type="submit" [disabled]="form.invalid || saving()">
+                        @if (saving()) {
+                            <mat-spinner diameter="18"></mat-spinner>
+                        }
+                        {{ i18n.strings().save }}
+                    </button>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

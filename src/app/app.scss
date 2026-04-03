@@ -1,0 +1,70 @@
+.app-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+mat-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.toolbar-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.topbar-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        background: color-mix(in srgb, var(--mat-sys-on-primary) 12%, transparent);
+    }
+}
+
+.avatar-btn {
+    width: 44px;
+    height: 44px;
+    overflow: hidden;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+}
+
+.menu-user-info {
+    line-height: 1.4;
+    white-space: normal;
+
+    small {
+        color: var(--mat-sys-on-surface-variant);
+    }
+}
+
+main {
+    min-height: calc(100vh - 64px);
+}

@@ -1,0 +1,252 @@
+@if (loading()) {
+    <div class="spinner-wrap">
+        <mat-spinner diameter="40"></mat-spinner>
+    </div>
+} @else if (product(); as prod) {
+    <div class="detail-container">
+        <!-- Product Info -->
+        <mat-card>
+            <mat-card-header>
+                @if (prod.image_url) {
+                    <img
+                        mat-card-avatar
+                        [src]="prod.image_url"
+                        [alt]="prod.name"
+                        class="product-image"
+                        referrerpolicy="no-referrer"
+                    />
+                }
+                <mat-card-title>{{ prod.name }}</mat-card-title>
+                <mat-card-subtitle>
+                    <a [href]="prod.url" target="_blank" rel="noopener noreferrer">{{
+                        prod.url
+                    }}</a>
+                </mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="price-section">
+                    <div class="price-main">
+                        <span class="label">{{ i18n.strings().currentPrice }}</span>
+                        <span class="value">{{ formatPrice(prod.current_price) }}</span>
+                    </div>
+                    <div class="price-meta">
+                        <span
+                            class="status"
+                            [class.status--success]="prod.last_check_status === 'success'"
+                            [class.status--error]="prod.last_check_status === 'error'"
+                            [class.status--pending]="prod.last_check_status === 'pending'"
+                        >
+                            @switch (prod.last_check_status) {
+                                @case ('success') {
+                                    {{ i18n.strings().statusSuccess }}
+                                }
+                                @case ('error') {
+                                    {{ i18n.strings().statusError }}
+                                }
+                                @default {
+                                    {{ i18n.strings().statusPending }}
+                                }
+                            }
+                        </span>
+                        @if (prod.availability && prod.availability !== 'unknown') {
+                            <span
+                                class="availability-badge"
+                                [class.availability--in-stock]="prod.availability === 'in_stock'"
+                                [class.availability--out-of-stock]="
+                                    prod.availability === 'out_of_stock'
+                                "
+                                [class.availability--preorder]="prod.availability === 'preorder'"
+                            >
+                                {{ getAvailabilityLabel(prod.availability) }}
+                            </span>
+                        }
+                        <span class="checked-time">
+                            @if (prod.last_checked_at) {
+                                {{ i18n.strings().lastChecked }}:
+                                {{ prod.last_checked_at | timeAgo: i18n.strings() }}
+                            } @else {
+                                {{ i18n.strings().neverChecked }}
+                            }
+                        </span>
+                    </div>
+                    @if (prod.last_check_error) {
+                        <div class="check-error">{{ prod.last_check_error }}</div>
+                    }
+                </div>
+
+                @if (checkResult(); as result) {
+                    <div
+                        class="test-result"
+                        [class.test-result--ok]="result.price !== null"
+                        [class.test-result--error]="result.price === null"
+                    >
+                        @if (result.price !== null) {
+                            <strong>{{ i18n.strings().priceFound }}:</strong> {{ result.price }}
+                            {{ result.currency }} <br /><small
+                                >{{ i18n.strings().extractionMethod }}: {{ result.method }}</small
+                            >
+                        } @else {
+                            <strong>{{ i18n.strings().priceNotFound }}</strong>
+                            @if (result.error) {
+                                <br /><small>{{ result.error }}</small>
+                            }
+                        }
+                    </div>
+                }
+            </mat-card-content>
+            <mat-card-actions>
+                <button mat-button (click)="goBack()">
+                    <mat-icon>arrow_back</mat-icon>
+                    {{ i18n.strings().back }}
+                </button>
+                <button mat-button (click)="checkPrice()" [disabled]="checking()">
+                    @if (checking()) {
+                        <mat-spinner diameter="18"></mat-spinner>
+                    } @else {
+                        <mat-icon>refresh</mat-icon>
+                    }
+                    {{ checking() ? i18n.strings().checking : i18n.strings().checkNow }}
+                </button>
+                <button mat-button (click)="editProduct()">
+                    <mat-icon>edit</mat-icon>
+                    {{ i18n.strings().edit }}
+                </button>
+                <button mat-button color="warn" (click)="deleteProduct()">
+                    <mat-icon>delete</mat-icon>
+                    {{ i18n.strings().delete }}
+                </button>
+            </mat-card-actions>
+        </mat-card>
+
+        <!-- Price History Chart -->
+        <section class="history-section">
+            <h2>{{ i18n.strings().priceHistory }}</h2>
+            <mat-button-toggle-group
+                [value]="historyPeriod()"
+                (change)="onPeriodChange($event.value)"
+                aria-label="Price history period"
+            >
+                <mat-button-toggle value="week">{{ i18n.strings().week }}</mat-button-toggle>
+                <mat-button-toggle value="month">{{ i18n.strings().month }}</mat-button-toggle>
+                <mat-button-toggle value="three_months">{{
+                    i18n.strings().threeMonths
+                }}</mat-button-toggle>
+                <mat-button-toggle value="year">{{ i18n.strings().year }}</mat-button-toggle>
+                <mat-button-toggle value="all">{{ i18n.strings().all }}</mat-button-toggle>
+            </mat-button-toggle-group>
+
+            @if (historyLoading()) {
+                <div class="chart-loading">
+                    <mat-spinner diameter="24"></mat-spinner>
+                </div>
+            } @else if (history().length === 0) {
+                <p class="no-history">{{ i18n.strings().noHistory }}</p>
+            } @else {
+                <div class="chart-container">
+                    <canvas #priceChart></canvas>
+                </div>
+            }
+        </section>
+
+        <mat-divider></mat-divider>
+
+        <!-- Alerts Section -->
+        <section class="alerts-section">
+            <h2>{{ i18n.strings().alerts }}</h2>
+
+            <!-- Add Alert Form -->
+            <form [formGroup]="alertForm" (ngSubmit)="addAlert()" class="add-alert-form">
+                <mat-form-field appearance="outline" class="target-input">
+                    <mat-label>{{ i18n.strings().targetPrice }} ({{ prod.currency }})</mat-label>
+                    <input
+                        matInput
+                        type="number"
+                        formControlName="target_price"
+                        min="0.01"
+                        step="1"
+                    />
+                </mat-form-field>
+                <button
+                    mat-flat-button
+                    type="submit"
+                    [disabled]="alertForm.invalid || addingAlert()"
+                >
+                    @if (addingAlert()) {
+                        <mat-spinner diameter="18"></mat-spinner>
+                    } @else {
+                        <mat-icon>add_alert</mat-icon>
+                    }
+                    {{ i18n.strings().addAlert }}
+                </button>
+            </form>
+
+            @if (alerts().length === 0) {
+                <p class="no-alerts">{{ i18n.strings().noAlerts }}</p>
+            } @else {
+                <div class="alert-list">
+                    @for (alert of alerts(); track alert.id) {
+                        <mat-card class="alert-card">
+                            <mat-card-content>
+                                <div class="alert-row">
+                                    <div class="alert-info">
+                                        <span class="alert-target">{{
+                                            formatPrice(alert.target_price)
+                                        }}</span>
+                                        <mat-chip-set>
+                                            <mat-chip
+                                                [class.alert-chip--active]="alert.is_active"
+                                                [class.alert-chip--paused]="!alert.is_active"
+                                            >
+                                                {{
+                                                    alert.is_active
+                                                        ? i18n.strings().alertActive
+                                                        : i18n.strings().alertInactive
+                                                }}
+                                            </mat-chip>
+                                        </mat-chip-set>
+                                        @if (alert.last_notified_at) {
+                                            <span class="alert-notified">
+                                                {{ i18n.strings().lastNotified }}:
+                                                {{
+                                                    alert.last_notified_at | timeAgo: i18n.strings()
+                                                }}
+                                                ({{ formatPrice(alert.last_notified_price) }})
+                                            </span>
+                                        }
+                                    </div>
+                                    <div class="alert-actions">
+                                        <mat-slide-toggle
+                                            [checked]="alert.is_active"
+                                            (change)="toggleAlert(alert)"
+                                            [attr.aria-label]="
+                                                alert.is_active
+                                                    ? i18n.strings().alertActive
+                                                    : i18n.strings().alertInactive
+                                            "
+                                        >
+                                        </mat-slide-toggle>
+                                        <button
+                                            mat-icon-button
+                                            color="warn"
+                                            (click)="deleteAlert(alert)"
+                                            [attr.aria-label]="i18n.strings().delete"
+                                        >
+                                            <mat-icon>delete</mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                                <mat-checkbox
+                                    [checked]="alert.notify_back_in_stock"
+                                    (change)="toggleBackInStock(alert)"
+                                    class="back-in-stock-toggle"
+                                >
+                                    {{ i18n.strings().notifyBackInStock }}
+                                </mat-checkbox>
+                            </mat-card-content>
+                        </mat-card>
+                    }
+                </div>
+            }
+        </section>
+    </div>
+}

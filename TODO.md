@@ -1,0 +1,6 @@
+- [x] Store price history (once per day, removed when product is removed, Chart.js chart with period selector: week, month, 3 months, year, all)
+- [x] Fetch price immediately when adding URL to input field so we only have to add fallback selector for products without price
+- [x] Parse selector (attribute, class, id, etc) when adding to field (e.g data-attribute="test" becomes [data-attribute="test"])
+- [x] Add alert immediately when adding a product (discount chips: 5%, 10%, 25%, 50%)
+- [x] Product availability tracking with back-in-stock notifications
+- [x] User approval system with admin panel

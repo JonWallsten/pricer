@@ -1,0 +1,17 @@
+<div class="login-container">
+    <mat-card class="login-card">
+        <mat-card-header>
+            <mat-card-title>🏷️ {{ i18n.strings().appName }}</mat-card-title>
+            <mat-card-subtitle>{{ i18n.strings().loginSubtitle }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            @if (auth.loading()) {
+                <div class="spinner-wrap">
+                    <mat-spinner diameter="36"></mat-spinner>
+                </div>
+            } @else {
+                <div #googleBtn class="google-btn-wrap"></div>
+            }
+        </mat-card-content>
+    </mat-card>
+</div>
