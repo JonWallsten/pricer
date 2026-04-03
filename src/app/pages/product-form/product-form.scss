@@ -17,8 +17,8 @@
     gap: 12px;
     padding: 12px 16px;
     border-radius: 8px;
-    background: light-dark(#e3f2fd, #1a2733);
-    color: light-dark(#1565c0, #90caf9);
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
     font-size: 14px;
 }
 

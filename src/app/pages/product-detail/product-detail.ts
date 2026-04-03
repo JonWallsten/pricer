@@ -12,15 +12,12 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { ApiService } from '../../api.service';
@@ -38,15 +35,12 @@ Chart.register(...registerables);
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         ReactiveFormsModule,
-        MatCardModule,
         MatButtonModule,
         MatIconModule,
         MatFormFieldModule,
         MatInputModule,
         MatProgressSpinnerModule,
         MatSlideToggleModule,
-        MatDividerModule,
-        MatChipsModule,
         MatButtonToggleModule,
         MatCheckboxModule,
         TimeAgoPipe,

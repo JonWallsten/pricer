@@ -9,11 +9,25 @@ mat-toolbar {
     position: sticky;
     top: 0;
     z-index: 100;
+    --mat-toolbar-container-background-color: var(--mat-sys-surface-container-lowest);
+    --mat-toolbar-container-text-color: var(--mat-sys-on-surface);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 840px;
+    margin: 0 auto;
+    gap: 4px;
 }
 
 .toolbar-title {
     font-size: 18px;
     font-weight: 600;
+    color: inherit;
+    text-decoration: none;
 }
 
 .spacer {
@@ -21,7 +35,7 @@ mat-toolbar {
 }
 
 .topbar-icon-btn {
-    background: none;
+    background: color-mix(in srgb, var(--mat-sys-on-surface) 7%, transparent);
     border: none;
     cursor: pointer;
     font-size: 20px;
@@ -31,29 +45,42 @@ mat-toolbar {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.15s;
 
     &:hover {
-        background: color-mix(in srgb, var(--mat-sys-on-primary) 12%, transparent);
+        background: color-mix(in srgb, var(--mat-sys-on-surface) 12%, transparent);
     }
 }
 
-.avatar-btn {
-    width: 44px;
-    height: 44px;
+.topbar-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--mat-sys-surface-container-high);
+    cursor: pointer;
+    padding: 0;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s;
+
+    &:hover {
+        opacity: 0.85;
+    }
 }
 
-.avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+.avatar-img {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
 }
 
-.avatar-icon {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
+.avatar-initial {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--mat-sys-on-surface);
 }
 
 .menu-user-info {

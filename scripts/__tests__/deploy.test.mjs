@@ -8,6 +8,7 @@ describe("parseDeployFlags", () => {
       apiOnly: false,
       frontendOnly: false,
       credentialsOnly: false,
+      insecureFtps: false,
     });
   });
 
@@ -17,6 +18,7 @@ describe("parseDeployFlags", () => {
     expect(flags.apiOnly).toBe(false);
     expect(flags.frontendOnly).toBe(false);
     expect(flags.credentialsOnly).toBe(false);
+    expect(flags.insecureFtps).toBe(false);
   });
 
   it("parses --api-only", () => {
@@ -36,6 +38,12 @@ describe("parseDeployFlags", () => {
     expect(flags.credentialsOnly).toBe(true);
     expect(flags.apiOnly).toBe(false);
     expect(flags.frontendOnly).toBe(false);
+  });
+
+  it("parses --insecure-ftps", () => {
+    const flags = parseDeployFlags(["--insecure-ftps"]);
+    expect(flags.insecureFtps).toBe(true);
+    expect(flags.dryRun).toBe(false);
   });
 
   it("parses multiple flags together", () => {

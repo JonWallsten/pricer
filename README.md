@@ -168,7 +168,7 @@ Three separate credential files keep secrets organised:
 | ------------------------ | ----------------------------------------------------------------------------- | :--------: | :-----------------: |
 | `.credentials.env`       | DB host/name/user/pass, Google OAuth client ID, JWT secret, SMTP, ADMIN_EMAIL |     No     |         Yes         |
 | `.credentials.local.env` | Local overrides (e.g. different DB host for dev)                              |     No     |         No          |
-| `.ftp.env`               | FTP host/user/pass/path for Oderland deployment                               |     No     |         No          |
+| `.ftp.env`               | FTP host/user/pass/path for FTP deployment                                    |     No     |         No          |
 
 Copy the examples and fill in your values:
 
@@ -210,6 +210,8 @@ Set `ADMIN_EMAIL` in `.credentials.env` to your Google account email. This user 
 
 All deployment targets use [basic-ftp](https://www.npmjs.com/package/basic-ftp) over FTPS. Credentials are read from `.ftp.env`.
 
+FTPS certificate verification is enabled by default. If your host uses a self-signed or mismatched certificate, you must opt in explicitly with `--insecure-ftps` for that deploy instead of silently disabling verification for every upload.
+
 ```bash
 # Full deploy: build Angular + upload frontend + upload API
 npm run deploy
@@ -233,7 +235,14 @@ node scripts/deploy.mjs --dry-run           # list files without transferring
 node scripts/deploy.mjs --api-only          # API files only
 node scripts/deploy.mjs --frontend-only     # built frontend only
 node scripts/deploy.mjs --credentials-only  # .credentials.env only
+node scripts/deploy.mjs --insecure-ftps     # allow invalid FTPS certs for this run only
 ```
+
+## 🔒 Security notes
+
+- Product URLs must use `http` or `https` and resolve to a public host. Localhost, private-network, and reserved IP targets are rejected to reduce SSRF risk.
+- Redirect following is disabled during price scraping so a public product URL cannot bounce into an internal address.
+- FTPS certificate verification stays on by default during deploys; only use `--insecure-ftps` when you have verified the server and cannot fix its certificate yet.
 
 ---
 

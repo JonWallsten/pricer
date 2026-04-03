@@ -126,16 +126,79 @@ function extractPageTitleFromDoc(DOMDocument $doc): ?string
 }
 
 /**
+ * Validate that a URL is safe for outbound fetching.
+ *
+ * Only public HTTP(S) targets are allowed. This blocks localhost, private or
+ * reserved IP ranges, and hostnames that resolve to those ranges.
+ */
+function isAllowedFetchUrl(string $url): bool
+{
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        return false;
+    }
+
+    $parts = parse_url($url);
+    if (!is_array($parts)) {
+        return false;
+    }
+
+    $scheme = strtolower($parts['scheme'] ?? '');
+    if (!in_array($scheme, ['http', 'https'], true)) {
+        return false;
+    }
+
+    $host = $parts['host'] ?? '';
+    if ($host === '') {
+        return false;
+    }
+
+    if (strcasecmp($host, 'localhost') === 0 || str_ends_with(strtolower($host), '.localhost')) {
+        return false;
+    }
+
+    if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+        return isPublicIpAddress($host);
+    }
+
+    $records = dns_get_record($host, DNS_A + DNS_AAAA);
+    if ($records === false || $records === []) {
+        return false;
+    }
+
+    foreach ($records as $record) {
+        $ip = $record['ip'] ?? $record['ipv6'] ?? null;
+        if (!is_string($ip) || !isPublicIpAddress($ip)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Reject private, loopback, link-local, multicast, and other reserved IPs.
+ */
+function isPublicIpAddress(string $ip): bool
+{
+    return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+}
+
+/**
  * Fetch a page over HTTP using cURL.
  */
 function fetchPage(string $url): ?string
 {
+    if (!isAllowedFetchUrl($url)) {
+        return null;
+    }
+
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL            => $url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS      => 5,
+        // Redirects are disabled so a public URL cannot bounce into localhost/private ranges.
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_MAXREDIRS      => 0,
         CURLOPT_TIMEOUT        => 15,
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_ENCODING       => '',  // Accept any encoding (gzip, deflate)

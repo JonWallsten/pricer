@@ -11,12 +11,25 @@ html {
         (
             color: (
                 primary: mat.$azure-palette,
-                tertiary: mat.$blue-palette,
+                tertiary: mat.$cyan-palette,
             ),
-            typography: Roboto,
+            typography: Inter,
             density: 0,
         )
     );
+
+    // Override surface tokens with neutral values (removes purple tinting from surfaces).
+    // Keeps violet for primary accent (buttons, price, selected states) only.
+    --mat-sys-surface: light-dark(#f7f5f2, #121214);
+    --mat-sys-surface-dim: light-dark(#e8e6e3, #121214);
+    --mat-sys-surface-bright: light-dark(#fbf9f6, #3a3a3c);
+    --mat-sys-surface-container-lowest: light-dark(#ffffff, #0c0c0e);
+    --mat-sys-surface-container-low: light-dark(#ffffff, #1a1a1c);
+    --mat-sys-surface-container: light-dark(#ffffff, #1e1e20);
+    --mat-sys-surface-container-high: light-dark(#f3f4f6, #262628);
+    --mat-sys-surface-container-highest: light-dark(#eceef0, #2e2e30);
+    --mat-sys-outline-variant: light-dark(#e5e7eb, #38383a);
+    --mat-sys-outline: light-dark(#d1d5db, #4a4a4c);
 }
 
 body {
@@ -26,6 +39,7 @@ body {
     // Use Material 3 surface tokens for proper dark-mode background
     background-color: var(--mat-sys-surface);
     color: var(--mat-sys-on-surface);
+    font-family: Inter, sans-serif;
 
     // Reset the user agent margin.
     margin: 0;

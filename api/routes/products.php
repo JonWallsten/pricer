@@ -40,6 +40,10 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
             sendJson(['error' => 'A valid URL is required'], 400);
             return;
         }
+        if (!isAllowedFetchUrl($url)) {
+            sendJson(['error' => 'URL must use http/https and resolve to a public host'], 400);
+            return;
+        }
 
         $result = extractPreview($url, $cssSelector ?: null);
         sendJson(['preview' => $result]);
@@ -59,6 +63,10 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
         }
         if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
             sendJson(['error' => 'A valid URL is required'], 400);
+            return;
+        }
+        if (!isAllowedFetchUrl($url)) {
+            sendJson(['error' => 'URL must use http/https and resolve to a public host'], 400);
             return;
         }
 
@@ -171,6 +179,10 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
                     sendJson(['error' => 'A valid URL is required'], 400);
                     return;
                 }
+                if (!isAllowedFetchUrl($url)) {
+                    sendJson(['error' => 'URL must use http/https and resolve to a public host'], 400);
+                    return;
+                }
                 $fields[] = 'url = :url';
                 $params[':url'] = $url;
             }
@@ -240,8 +252,6 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
 
             // Record price history (one per day via INSERT IGNORE)
             recordPriceHistory($db, $productId, $result['price'], $result['currency'] ?? $product['currency'] ?? 'SEK');
-        } else {
-            ]);
         } else {
             $stmt = $db->prepare(
                 'UPDATE products

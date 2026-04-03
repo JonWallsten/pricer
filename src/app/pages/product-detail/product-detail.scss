@@ -1,3 +1,4 @@
+// ─── Page Layout ──────────────────────────────────────────
 .spinner-wrap {
     display: flex;
     justify-content: center;
@@ -5,55 +6,130 @@
 }
 
 .detail-container {
-    padding: 16px;
-    max-width: 540px;
+    max-width: 840px;
     margin: 0 auto;
+    padding: 24px 16px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
 }
 
-.price-section {
-    margin-top: 16px;
+// ─── Hero Card ────────────────────────────────────────────
+.hero-card {
+    background: var(--mat-sys-surface-container-low);
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.product-image {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
+.hero-header {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.hero-image {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
     object-fit: cover;
+    flex-shrink: 0;
 }
 
-.price-main {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 8px;
-
-    .label {
-        color: var(--mat-sys-on-surface-variant);
-        font-size: 14px;
-    }
-
-    .value {
-        font-size: 28px;
-        font-weight: 700;
-        color: var(--mat-sys-primary);
-    }
+.hero-identity {
+    flex: 1;
+    min-width: 0;
 }
 
-.price-meta {
-    display: flex;
+.hero-name {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0 0 4px;
+    color: var(--mat-sys-on-surface);
+}
+
+.hero-url {
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 100%;
+    font-size: 13px;
+    color: var(--mat-sys-on-surface-variant);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.15s ease;
+
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
+    }
 }
 
-.status {
+.hero-url-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+.hero-price {
+    flex-shrink: 0;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.hero-price-label {
     font-size: 12px;
     font-weight: 500;
-    padding: 2px 8px;
-    border-radius: 12px;
+    color: var(--mat-sys-on-surface-variant);
+    margin-bottom: 2px;
+}
+
+.hero-price-value {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--mat-sys-primary);
+}
+
+// ─── Hero Meta ────────────────────────────────────────────
+.hero-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.meta-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.meta-timestamp {
+    font-size: 13px;
+    color: var(--mat-sys-on-surface-variant);
+    flex-shrink: 0;
+}
+
+// ─── Badges (shared) ─────────────────────────────────────
+.badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    white-space: nowrap;
 
     &--success {
         background: light-dark(#e8f5e9, #1b3a1f);
@@ -65,52 +141,31 @@
         color: light-dark(#c62828, #ef9a9a);
     }
 
-    &--pending {
+    &--warning {
         background: light-dark(#fff3e0, #3e2700);
         color: light-dark(#e65100, #ffb74d);
     }
-}
 
-.availability-badge {
-    font-size: 12px;
-    font-weight: 500;
-    padding: 2px 8px;
-    border-radius: 12px;
-
-    &.availability--in-stock {
-        background: light-dark(#e8f5e9, #1b3a1f);
-        color: light-dark(#2e7d32, #81c784);
-    }
-
-    &.availability--out-of-stock {
-        background: light-dark(#ffebee, #3e1214);
-        color: light-dark(#c62828, #ef9a9a);
-    }
-
-    &.availability--preorder {
-        background: light-dark(#fff3e0, #3e2700);
-        color: light-dark(#e65100, #ffb74d);
+    &--muted {
+        background: light-dark(#f5f5f5, #2c2c2c);
+        color: light-dark(#757575, #bdbdbd);
     }
 }
 
-.checked-time {
-    font-size: 12px;
-    color: var(--mat-sys-on-surface-variant);
-}
-
+// ─── Hero Feedback ────────────────────────────────────────
 .check-error {
-    margin-top: 8px;
+    margin-top: 12px;
     font-size: 13px;
     color: var(--mat-sys-error);
     background: light-dark(#ffebee, #3e1214);
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 10px 14px;
+    border-radius: 12px;
 }
 
 .test-result {
     margin-top: 12px;
     padding: 12px 16px;
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 14px;
 
     &--ok {
@@ -124,80 +179,163 @@
     }
 }
 
-mat-card-actions {
+// ─── Hero Actions ─────────────────────────────────────────
+.hero-actions {
     display: flex;
+    align-items: center;
+    gap: 8px;
     flex-wrap: wrap;
-    gap: 4px;
-}
+    margin-top: 20px;
 
-// Price history
-.history-section {
-    h2 {
-        margin: 0 0 12px;
-    }
-
-    mat-button-toggle-group {
-        margin-bottom: 16px;
+    // Override Material button border-radius
+    [mat-stroked-button],
+    [mat-flat-button] {
+        border-radius: 14px;
     }
 }
 
-.chart-container {
-    position: relative;
-    height: 220px;
-    width: 100%;
+.hero-delete-btn {
+    margin-left: auto;
+    color: var(--mat-sys-error);
 }
 
-.chart-loading {
+// ─── Section Containers ──────────────────────────────────
+.section {
+    background: var(--mat-sys-surface-container);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid var(--mat-sys-outline-variant);
+}
+
+.section-header {
     display: flex;
-    justify-content: center;
-    padding: 32px 0;
-}
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
 
-.no-history {
-    color: var(--mat-sys-on-surface-variant);
-    text-align: center;
-    padding: 24px 0;
-}
-
-// Alerts
-.alerts-section {
     h2 {
-        margin: 0 0 16px;
+        font-size: 22px;
+        font-weight: 650;
+        line-height: 1.25;
+        margin: 0;
+        color: var(--mat-sys-on-surface);
     }
 }
 
+// ─── Segmented Toggle ────────────────────────────────────
+.period-toggle {
+    --mat-button-toggle-shape: 8px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+// ─── Chart Area ──────────────────────────────────────────
+.chart-area {
+    position: relative;
+    min-height: 240px;
+    background: var(--mat-sys-surface-container-low);
+    border-radius: 12px;
+    padding: 16px;
+
+    canvas {
+        width: 100% !important;
+        height: 210px !important;
+    }
+}
+
+.chart-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    gap: 8px;
+
+    p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--mat-sys-on-surface-variant);
+    }
+}
+
+.empty-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: var(--mat-sys-outline);
+}
+
+// ─── Alert Form ──────────────────────────────────────────
 .add-alert-form {
     display: flex;
     gap: 12px;
     align-items: flex-start;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 
     .target-input {
         flex: 1;
+
+        // Override form-field outline radius
+        --mat-form-field-container-shape: 14px;
     }
 
-    button {
+    [mat-flat-button] {
         margin-top: 4px;
+        border-radius: 14px;
     }
 }
 
-.no-alerts {
-    color: var(--mat-sys-on-surface-variant);
-    text-align: center;
-    padding: 24px 0;
+// ─── Alerts Empty State ──────────────────────────────────
+.alerts-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 0;
+    gap: 8px;
+
+    p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--mat-sys-on-surface-variant);
+    }
 }
 
+// ─── Alert List ──────────────────────────────────────────
 .alert-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
 }
 
-.alert-card mat-card-content {
-    padding: 12px 16px;
+.alert-item {
+    background: var(--mat-sys-surface-container-high);
+    padding: 16px;
+    transition: background 0.15s ease;
+
+    &:first-child {
+        border-radius: 14px 14px 0 0;
+    }
+
+    &:last-child {
+        border-radius: 0 0 14px 14px;
+    }
+
+    &:only-child {
+        border-radius: 14px;
+    }
+
+    &:not(:last-child) {
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+
+    &:hover {
+        background: var(--mat-sys-surface-container-highest);
+    }
 }
 
-.alert-row {
+.alert-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -206,13 +344,16 @@ mat-card-actions {
 
 .alert-info {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 
 .alert-target {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 650;
+    color: var(--mat-sys-on-surface);
 }
 
 .alert-notified {
@@ -227,17 +368,62 @@ mat-card-actions {
     flex-shrink: 0;
 }
 
-.alert-chip--active {
-    background: light-dark(#e8f5e9, #1b3a1f);
-    color: light-dark(#2e7d32, #81c784);
+.alert-delete-btn {
+    color: var(--mat-sys-error);
+    opacity: 0.7;
+    transition: opacity 0.15s ease;
+
+    &:hover {
+        opacity: 1;
+    }
 }
 
-.alert-chip--paused {
-    background: light-dark(#f5f5f5, #2c2c2c);
-    color: light-dark(#757575, #bdbdbd);
-}
-
-.back-in-stock-toggle {
+.alert-bottom {
     margin-top: 8px;
-    font-size: 13px;
+
+    mat-checkbox {
+        --mat-checkbox-label-text-size: 13px;
+        --mat-checkbox-label-text-color: var(--mat-sys-on-surface-variant);
+    }
+}
+
+// ─── Responsive ──────────────────────────────────────────
+@media (max-width: 480px) {
+    .hero-header {
+        flex-wrap: wrap;
+    }
+
+    .hero-price {
+        width: 100%;
+        text-align: left;
+        align-items: flex-start;
+        margin-top: 8px;
+    }
+
+    .hero-price-value {
+        font-size: 28px;
+    }
+
+    .hero-actions {
+        [mat-stroked-button],
+        [mat-flat-button] {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .alert-top {
+        flex-wrap: wrap;
+    }
+
+    .alert-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 8px;
+    }
 }

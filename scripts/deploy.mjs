@@ -14,6 +14,7 @@ export function parseDeployFlags(argv) {
         apiOnly: false,
         frontendOnly: false,
         credentialsOnly: false,
+        insecureFtps: false,
     };
     for (const arg of argv) {
         switch (arg) {
@@ -28,6 +29,9 @@ export function parseDeployFlags(argv) {
                 break;
             case '--credentials-only':
                 flags.credentialsOnly = true;
+                break;
+            case '--insecure-ftps':
+                flags.insecureFtps = true;
                 break;
             default:
                 throw new Error(`Unknown flag: ${arg}`);
@@ -169,14 +173,19 @@ async function main() {
         console.log(`🚀  Deploying to ${creds.FTP_HOST}...`);
 
         if (!flags.dryRun) {
-            await client.access({
+            const accessOptions = {
                 host: creds.FTP_HOST,
                 user: creds.FTP_USER,
                 password: creds.FTP_PASS,
                 secure: true,
-                // Shared hosts often have self-signed or mismatched certs
-                secureOptions: { rejectUnauthorized: false },
-            });
+            };
+
+            if (flags.insecureFtps) {
+                console.warn('⚠️  FTPS certificate verification disabled for this deploy');
+                accessOptions.secureOptions = { rejectUnauthorized: false };
+            }
+
+            await client.access(accessOptions);
         }
 
         if (flags.credentialsOnly) {

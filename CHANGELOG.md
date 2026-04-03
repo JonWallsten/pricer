@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Redesigned product detail page with premium card layout, refined typography, surface layering, and polished component styling
+- Color palette changed from azure/blue to violet/orange for a modern look that works better in dark mode
+- Neutral surface tokens: overrode Material 3 surface variables with warm neutral values (#F7F5F2 page bg, #FFFFFF cards, #F3F4F6 nested) to remove purple tinting
+- Header redesigned: neutral background with subtle border, centered inner container aligned to content width (840px)
+- Toolbar buttons and avatar use neutral surface tokens instead of primary-colored mixing
+- Product detail sections use border-based framing instead of shadow-heavy cards for lighter appearance
+- Toolbar title is now a home link for easy navigation back from admin and detail pages
+- Theme toggle button now has a visible background instead of blending into the toolbar
+- Fetching banner on product form now uses Material theme tokens instead of hardcoded colors
+
+### Fixed
+
+- Blocked localhost, private-network, and reserved-address product URLs in preview/create/update flows to reduce SSRF risk
+- Disabled redirect following in the scraper fetch path so public URLs cannot bounce into internal hosts
+- Enabled FTPS certificate verification by default in deployment; insecure certificate bypass now requires explicit `--insecure-ftps`
+
 ## [1.0.0] — 2026-04-03
 
 ### Added

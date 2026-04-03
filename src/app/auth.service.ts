@@ -34,6 +34,19 @@ export class AuthService {
     readonly loading = signal(true);
     private clientId = '';
 
+    /** Resolves once the initial session check is complete. Guards await this. */
+    readonly initPromise: Promise<void>;
+    private resolveInit!: () => void;
+
+    constructor() {
+        this.initPromise = new Promise<void>((resolve) => {
+            this.resolveInit = resolve;
+        });
+    }
+
+    /** URL to navigate to after successful login. Set by authGuard. */
+    returnUrl = '/';
+
     async init() {
         try {
             const res = await fetch('api/auth/config');
@@ -42,6 +55,7 @@ export class AuthService {
             this.clientId = data.google_client_id;
         } catch {
             this.loading.set(false);
+            this.resolveInit();
             return;
         }
 
@@ -57,6 +71,7 @@ export class AuthService {
         }
 
         this.loading.set(false);
+        this.resolveInit();
     }
 
     renderGoogleButton(element: HTMLElement) {
@@ -93,7 +108,9 @@ export class AuthService {
 
             const data = await res.json();
             this.user.set(data.user);
-            this.router.navigate([data.user.is_approved ? '/' : '/pending']);
+            const dest = data.user.is_approved ? this.returnUrl : '/pending';
+            this.returnUrl = '/';
+            this.router.navigate([dest]);
         } catch {
             // Auth failed
         } finally {

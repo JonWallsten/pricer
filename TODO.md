@@ -4,3 +4,6 @@
 - [x] Add alert immediately when adding a product (discount chips: 5%, 10%, 25%, 50%)
 - [x] Product availability tracking with back-in-stock notifications
 - [x] User approval system with admin panel
+- [x] Pricer title needs home link to get out of admin mode.
+- [x] dark/light mode button is missing some kind of background
+- [x] The UI needs an overhaul. It looks old unpolished. Dark blue primary color could be some other color to work better with dark mode.
