@@ -50,6 +50,7 @@ define('SMTP_PASS', $_ENV['SMTP_PASS'] ?? '');
 define('SMTP_FROM', $_ENV['SMTP_FROM'] ?? '');
 define('NOTIFICATION_FROM_EMAIL', $_ENV['NOTIFICATION_FROM_EMAIL'] ?? 'noreply@jonwallsten.com');
 define('ADMIN_EMAIL', $_ENV['ADMIN_EMAIL'] ?? '');
+define('ADMIN_GOOGLE_ID', $_ENV['ADMIN_GOOGLE_ID'] ?? '');
 
 // ─── Validate critical secrets ────────────────────────────
 if (JWT_SECRET === '') {

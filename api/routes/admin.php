@@ -4,18 +4,21 @@ declare(strict_types=1);
 
 function handleAdminRoutes(string $method, string $path, array $authUser): void
 {
-    // Guard: only ADMIN_EMAIL can access admin routes
-    if (ADMIN_EMAIL === '' || $authUser['email'] !== ADMIN_EMAIL) {
+    $db = getDb();
+    $currentUserStmt = $db->prepare('SELECT google_id FROM users WHERE id = :id');
+    $currentUserStmt->execute([':id' => $authUser['user_id']]);
+    $currentUser = $currentUserStmt->fetch();
+
+    // Guard: only the configured Google account can access admin routes
+    if (!$currentUser || !isConfiguredAdminGoogleId((string) $currentUser['google_id'])) {
         sendJson(['error' => 'Forbidden'], 403);
         return;
     }
 
-    $db = getDb();
-
     // GET /admin/users — list all users
     if ($method === 'GET' && $path === '/admin/users') {
         $stmt = $db->query(
-            'SELECT id, email, name, picture_url, is_approved, created_at, last_login_at
+            'SELECT id, email, name, picture_url, is_approved, created_at, last_login_at, google_id
              FROM users ORDER BY created_at DESC'
         );
         $users = $stmt->fetchAll();
@@ -26,7 +29,7 @@ function handleAdminRoutes(string $method, string $path, array $authUser): void
             'name'          => $u['name'],
             'picture_url'   => $u['picture_url'],
             'is_approved'   => (bool) (int) $u['is_approved'],
-            'is_admin'      => $u['email'] === ADMIN_EMAIL,
+            'is_admin'      => isConfiguredAdminGoogleId((string) $u['google_id']),
             'created_at'    => $u['created_at'],
             'last_login_at' => $u['last_login_at'],
         ], $users);

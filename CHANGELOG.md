@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Multi-URL support**: Products can now track multiple retailer URLs. The lowest price across all sites is displayed as the product's current price
+- New `product_urls` database table (migration 008) for storing per-URL price data
+- "Sites" section on product detail page showing per-site prices, availability, and domain
+- Per-site refresh button and "Check all" button for checking all URLs at once
+- "Add URL" / "Remove URL" buttons on product form for managing multiple URLs per product
+- Per-URL preview on the product form when adding new products
+- "N sites" badge on dashboard cards when a product tracks multiple URLs
+- New i18n keys for multi-URL UI (en + sv)
+
 ### Changed
 
 - Redesigned product detail page with premium card layout, refined typography, surface layering, and polished component styling
@@ -17,12 +28,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Toolbar title is now a home link for easy navigation back from admin and detail pages
 - Theme toggle button now has a visible background instead of blending into the toolbar
 - Fetching banner on product form now uses Material theme tokens instead of hardcoded colors
+- Added shared app-level styling tokens/utilities for page widths, badge sizing, and common surface semantics to reduce duplicated SCSS across pages
 
 ### Fixed
 
 - Blocked localhost, private-network, and reserved-address product URLs in preview/create/update flows to reduce SSRF risk
 - Disabled redirect following in the scraper fetch path so public URLs cannot bounce into internal hosts
 - Enabled FTPS certificate verification by default in deployment; insecure certificate bypass now requires explicit `--insecure-ftps`
+- Switched admin authorization from email matching to `ADMIN_GOOGLE_ID` and now require `email_verified` on Google login
 
 ## [1.0.0] — 2026-04-03
 

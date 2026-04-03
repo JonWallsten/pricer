@@ -20,9 +20,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSelectModule } from '@angular/material/select';
 import { ApiService } from '../../api.service';
 import { I18nService } from '../../i18n.service';
-import { Product, Alert, ExtractionResult, PriceHistoryEntry } from '../../models';
+import { Product, ProductUrl, Alert, ExtractionResult, PriceHistoryEntry } from '../../models';
 import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
 import { Chart, registerables } from 'chart.js';
 
@@ -43,6 +44,7 @@ Chart.register(...registerables);
         MatSlideToggleModule,
         MatButtonToggleModule,
         MatCheckboxModule,
+        MatSelectModule,
         TimeAgoPipe,
     ],
 })
@@ -56,9 +58,11 @@ export class ProductDetail implements OnInit, OnDestroy {
 
     protected readonly product = signal<Product | null>(null);
     protected readonly alerts = signal<Alert[]>([]);
+    protected readonly urls = signal<ProductUrl[]>([]);
     protected readonly loading = signal(true);
     protected readonly checking = signal(false);
     protected readonly checkResult = signal<ExtractionResult | null>(null);
+    protected readonly checkingUrlIds = signal<Set<number>>(new Set());
     protected readonly addingAlert = signal(false);
     protected readonly historyPeriod = signal<string>('month');
     protected readonly history = signal<PriceHistoryEntry[]>([]);
@@ -86,6 +90,7 @@ export class ProductDetail implements OnInit, OnDestroy {
             const data = await this.api.getProduct(Number(this.id()));
             this.product.set(data.product);
             this.alerts.set(data.alerts);
+            this.urls.set(data.urls);
         } catch {
             this.router.navigate(['/']);
         } finally {
@@ -183,10 +188,38 @@ export class ProductDetail implements OnInit, OnDestroy {
             const result = await this.api.checkPrice(Number(this.id()));
             this.product.set(result.product);
             this.checkResult.set(result.extraction);
+            // Reload URLs to get updated per-URL prices
+            const data = await this.api.getProduct(Number(this.id()));
+            this.urls.set(data.urls);
         } catch {
             // Error
         } finally {
             this.checking.set(false);
+        }
+    }
+
+    async checkSingleUrl(urlId: number) {
+        this.checkingUrlIds.update((s) => new Set(s).add(urlId));
+        try {
+            const result = await this.api.checkUrl(Number(this.id()), urlId);
+            this.product.set(result.product);
+            this.urls.update((list) => list.map((u) => (u.id === result.url.id ? result.url : u)));
+        } catch {
+            // Error
+        } finally {
+            this.checkingUrlIds.update((s) => {
+                const next = new Set(s);
+                next.delete(urlId);
+                return next;
+            });
+        }
+    }
+
+    getDomain(url: string): string {
+        try {
+            return new URL(url).hostname.replace(/^www\./, '');
+        } catch {
+            return url;
         }
     }
 

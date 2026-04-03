@@ -110,6 +110,15 @@ interface I18nStrings {
     userEmail: string;
     userJoined: string;
     userLastLogin: string;
+
+    // Multi-URL / Sites
+    sites: string;
+    nSites: string;
+    addUrl: string;
+    removeUrl: string;
+    checkAll: string;
+    lowestPrice: string;
+    site: string;
 }
 
 const en: I18nStrings = {
@@ -211,6 +220,14 @@ const en: I18nStrings = {
     userEmail: 'Email',
     userJoined: 'Joined',
     userLastLogin: 'Last login',
+
+    sites: 'Sites',
+    nSites: '{n} sites',
+    addUrl: 'Add URL',
+    removeUrl: 'Remove URL',
+    checkAll: 'Check all',
+    lowestPrice: 'Lowest price',
+    site: 'Site',
 };
 
 const sv: I18nStrings = {
@@ -312,6 +329,14 @@ const sv: I18nStrings = {
     userEmail: 'E-post',
     userJoined: 'Registrerad',
     userLastLogin: 'Senaste inloggning',
+
+    sites: 'Sidor',
+    nSites: '{n} sidor',
+    addUrl: 'Lägg till URL',
+    removeUrl: 'Ta bort URL',
+    checkAll: 'Kontrollera alla',
+    lowestPrice: 'Lägsta pris',
+    site: 'Sida',
 };
 
 const translations: Record<Lang, I18nStrings> = { en, sv };

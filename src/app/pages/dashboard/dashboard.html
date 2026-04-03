@@ -3,7 +3,7 @@
         <mat-spinner diameter="40"></mat-spinner>
     </div>
 } @else {
-    <div class="dashboard">
+    <div class="dashboard page-container page-container--narrow">
         @if (products().length === 0) {
             <div class="empty-state">
                 <mat-icon class="empty-icon">shopping_cart</mat-icon>
@@ -49,12 +49,12 @@
                         <mat-card-content>
                             <div class="product-meta">
                                 <span
-                                    class="status"
-                                    [class.status--success]="
+                                    class="badge"
+                                    [class.badge--success]="
                                         product.last_check_status === 'success'
                                     "
-                                    [class.status--error]="product.last_check_status === 'error'"
-                                    [class.status--pending]="
+                                    [class.badge--error]="product.last_check_status === 'error'"
+                                    [class.badge--warning]="
                                         product.last_check_status === 'pending'
                                     "
                                 >
@@ -72,14 +72,14 @@
                                 </span>
                                 @if (product.availability && product.availability !== 'unknown') {
                                     <span
-                                        class="availability-badge"
-                                        [class.availability--in-stock]="
+                                        class="badge"
+                                        [class.badge--success]="
                                             product.availability === 'in_stock'
                                         "
-                                        [class.availability--out-of-stock]="
+                                        [class.badge--error]="
                                             product.availability === 'out_of_stock'
                                         "
-                                        [class.availability--preorder]="
+                                        [class.badge--warning]="
                                             product.availability === 'preorder'
                                         "
                                     >
@@ -111,6 +111,16 @@
                                             {{ i18n.strings().activeAlerts }}
                                         </mat-chip>
                                     </mat-chip-set>
+                                }
+                                @if (product.urls_count && product.urls_count > 1) {
+                                    <span class="sites-badge">
+                                        <mat-icon class="sites-badge-icon">language</mat-icon>
+                                        {{
+                                            i18n
+                                                .strings()
+                                                .nSites.replace('{n}', '' + product.urls_count)
+                                        }}
+                                    </span>
                                 }
                             </div>
                         </mat-card-content>

@@ -3,7 +3,7 @@
         <mat-spinner diameter="40"></mat-spinner>
     </div>
 } @else if (product(); as prod) {
-    <div class="detail-container">
+    <div class="detail-container page-container page-container--wide">
         <!-- Hero Card -->
         <div class="hero-card">
             <div class="hero-header">
@@ -23,7 +23,13 @@
                     </a>
                 </div>
                 <div class="hero-price">
-                    <span class="hero-price-label">{{ i18n.strings().currentPrice }}</span>
+                    <span class="hero-price-label">
+                        @if (urls().length > 1) {
+                            {{ i18n.strings().lowestPrice }}
+                        } @else {
+                            {{ i18n.strings().currentPrice }}
+                        }
+                    </span>
                     <span class="hero-price-value">{{ formatPrice(prod.current_price) }}</span>
                 </div>
             </div>
@@ -95,11 +101,29 @@
             }
 
             <div class="hero-actions">
-                <button mat-stroked-button (click)="goBack()">
+                <button
+                    mat-stroked-button
+                    class="hero-back-btn hero-back-btn--desktop"
+                    (click)="goBack()"
+                >
                     <mat-icon>arrow_back</mat-icon>
                     {{ i18n.strings().back }}
                 </button>
-                <button mat-flat-button (click)="checkPrice()" [disabled]="checking()">
+                <button
+                    mat-icon-button
+                    class="hero-back-btn hero-back-btn--mobile"
+                    (click)="goBack()"
+                    [attr.aria-label]="i18n.strings().back"
+                    [title]="i18n.strings().back"
+                >
+                    <mat-icon>arrow_back</mat-icon>
+                </button>
+                <button
+                    mat-flat-button
+                    class="hero-check-btn hero-check-btn--desktop"
+                    (click)="checkPrice()"
+                    [disabled]="checking()"
+                >
                     @if (checking()) {
                         <mat-spinner diameter="18"></mat-spinner>
                     } @else {
@@ -107,39 +131,190 @@
                     }
                     {{ checking() ? i18n.strings().checking : i18n.strings().checkNow }}
                 </button>
-                <button mat-stroked-button (click)="editProduct()">
+                <button
+                    mat-icon-button
+                    class="hero-check-btn hero-check-btn--mobile"
+                    (click)="checkPrice()"
+                    [disabled]="checking()"
+                    [attr.aria-label]="checking() ? i18n.strings().checking : i18n.strings().checkNow"
+                    [title]="checking() ? i18n.strings().checking : i18n.strings().checkNow"
+                >
+                    @if (checking()) {
+                        <mat-spinner diameter="18"></mat-spinner>
+                    } @else {
+                        <mat-icon>refresh</mat-icon>
+                    }
+                </button>
+                <button
+                    mat-stroked-button
+                    class="hero-edit-btn hero-edit-btn--desktop"
+                    (click)="editProduct()"
+                >
                     <mat-icon>edit</mat-icon>
                     {{ i18n.strings().edit }}
+                </button>
+                <button
+                    mat-icon-button
+                    class="hero-edit-btn hero-edit-btn--mobile"
+                    (click)="editProduct()"
+                    [attr.aria-label]="i18n.strings().edit"
+                    [title]="i18n.strings().edit"
+                >
+                    <mat-icon>edit</mat-icon>
                 </button>
                 <button
                     mat-icon-button
                     class="hero-delete-btn"
                     (click)="deleteProduct()"
                     [attr.aria-label]="i18n.strings().delete"
+                    [title]="i18n.strings().delete"
                 >
                     <mat-icon>delete</mat-icon>
                 </button>
             </div>
         </div>
 
+        <!-- Sites -->
+        @if (urls().length > 0) {
+            <section class="section">
+                <div class="section-header">
+                    <h2>{{ i18n.strings().sites }} ({{ urls().length }})</h2>
+                    @if (urls().length > 1) {
+                        <button mat-flat-button (click)="checkPrice()" [disabled]="checking()">
+                            @if (checking()) {
+                                <mat-spinner diameter="18"></mat-spinner>
+                            } @else {
+                                <mat-icon>refresh</mat-icon>
+                            }
+                            {{ i18n.strings().checkAll }}
+                        </button>
+                    }
+                </div>
+
+                <div class="site-list">
+                    @for (siteUrl of urls(); track siteUrl.id) {
+                        <div class="site-item">
+                            <div class="site-main">
+                                @if (siteUrl.image_url) {
+                                    <img
+                                        [src]="siteUrl.image_url"
+                                        class="site-image"
+                                        alt=""
+                                        referrerpolicy="no-referrer"
+                                    />
+                                }
+                                <div class="site-info">
+                                    <a
+                                        class="site-domain"
+                                        [href]="siteUrl.url"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        {{ getDomain(siteUrl.url) }}
+                                        <mat-icon class="site-link-icon">open_in_new</mat-icon>
+                                    </a>
+                                    <div class="site-meta">
+                                        @if (
+                                            siteUrl.availability &&
+                                            siteUrl.availability !== 'unknown'
+                                        ) {
+                                            <span
+                                                class="badge"
+                                                [class.badge--success]="
+                                                    siteUrl.availability === 'in_stock'
+                                                "
+                                                [class.badge--error]="
+                                                    siteUrl.availability === 'out_of_stock'
+                                                "
+                                                [class.badge--warning]="
+                                                    siteUrl.availability === 'preorder'
+                                                "
+                                            >
+                                                {{ getAvailabilityLabel(siteUrl.availability) }}
+                                            </span>
+                                        }
+                                        @if (siteUrl.last_check_status === 'error') {
+                                            <span class="badge badge--error">{{
+                                                i18n.strings().statusError
+                                            }}</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="site-price-area">
+                                    @if (siteUrl.current_price !== null) {
+                                        <span class="site-price">{{
+                                            formatPrice(siteUrl.current_price, siteUrl.currency)
+                                        }}</span>
+                                    } @else {
+                                        <span class="site-price site-price--unknown">—</span>
+                                    }
+                                </div>
+                                <button
+                                    mat-icon-button
+                                    class="site-refresh-btn"
+                                    (click)="checkSingleUrl(siteUrl.id)"
+                                    [disabled]="checkingUrlIds().has(siteUrl.id)"
+                                    [attr.aria-label]="i18n.strings().checkNow"
+                                    [title]="i18n.strings().checkNow"
+                                >
+                                    @if (checkingUrlIds().has(siteUrl.id)) {
+                                        <mat-spinner diameter="18"></mat-spinner>
+                                    } @else {
+                                        <mat-icon>refresh</mat-icon>
+                                    }
+                                </button>
+                            </div>
+                            @if (
+                                siteUrl.last_check_status === 'error' && siteUrl.last_check_error
+                            ) {
+                                <div class="site-error">{{ siteUrl.last_check_error }}</div>
+                            }
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+
         <!-- Price History -->
         <section class="section">
             <div class="section-header">
                 <h2>{{ i18n.strings().priceHistory }}</h2>
-                <mat-button-toggle-group
-                    [value]="historyPeriod()"
-                    (change)="onPeriodChange($event.value)"
-                    aria-label="Price history period"
-                    class="period-toggle"
-                >
-                    <mat-button-toggle value="week">{{ i18n.strings().week }}</mat-button-toggle>
-                    <mat-button-toggle value="month">{{ i18n.strings().month }}</mat-button-toggle>
-                    <mat-button-toggle value="three_months">{{
-                        i18n.strings().threeMonths
-                    }}</mat-button-toggle>
-                    <mat-button-toggle value="year">{{ i18n.strings().year }}</mat-button-toggle>
-                    <mat-button-toggle value="all">{{ i18n.strings().all }}</mat-button-toggle>
-                </mat-button-toggle-group>
+                <div class="period-toggle-wrap period-toggle-wrap--desktop">
+                    <mat-button-toggle-group
+                        [value]="historyPeriod()"
+                        (change)="onPeriodChange($event.value)"
+                        aria-label="Price history period"
+                        class="period-toggle"
+                    >
+                        <mat-button-toggle value="week">{{
+                            i18n.strings().week
+                        }}</mat-button-toggle>
+                        <mat-button-toggle value="month">{{
+                            i18n.strings().month
+                        }}</mat-button-toggle>
+                        <mat-button-toggle value="three_months">{{
+                            i18n.strings().threeMonths
+                        }}</mat-button-toggle>
+                        <mat-button-toggle value="year">{{
+                            i18n.strings().year
+                        }}</mat-button-toggle>
+                        <mat-button-toggle value="all">{{ i18n.strings().all }}</mat-button-toggle>
+                    </mat-button-toggle-group>
+                </div>
+                <mat-form-field appearance="outline" class="period-select period-toggle-wrap--mobile">
+                    <mat-label>{{ i18n.strings().priceHistory }}</mat-label>
+                    <mat-select
+                        [value]="historyPeriod()"
+                        (selectionChange)="onPeriodChange($event.value)"
+                        [aria-label]="i18n.strings().priceHistory"
+                    >
+                        <mat-option value="week">{{ i18n.strings().week }}</mat-option>
+                        <mat-option value="month">{{ i18n.strings().month }}</mat-option>
+                        <mat-option value="three_months">{{ i18n.strings().threeMonths }}</mat-option>
+                        <mat-option value="year">{{ i18n.strings().year }}</mat-option>
+                        <mat-option value="all">{{ i18n.strings().all }}</mat-option>
+                    </mat-select>
+                </mat-form-field>
             </div>
 
             <div class="chart-area">

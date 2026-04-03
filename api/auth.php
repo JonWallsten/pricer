@@ -58,6 +58,16 @@ function verifyJwt(string $token): ?array
     return $payload;
 }
 
+function isGoogleEmailVerified(mixed $value): bool
+{
+    return $value === true || $value === 1 || $value === '1' || $value === 'true';
+}
+
+function isConfiguredAdminGoogleId(string $googleId): bool
+{
+    return ADMIN_GOOGLE_ID !== '' && hash_equals(ADMIN_GOOGLE_ID, $googleId);
+}
+
 // ─── Cookie helpers ───────────────────────────────────────
 
 function getAuthCookiePath(): string

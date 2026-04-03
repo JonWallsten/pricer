@@ -30,6 +30,10 @@ html {
     --mat-sys-surface-container-highest: light-dark(#eceef0, #2e2e30);
     --mat-sys-outline-variant: light-dark(#e5e7eb, #38383a);
     --mat-sys-outline: light-dark(#d1d5db, #4a4a4c);
+
+    --app-surface-raised: var(--mat-sys-surface-container);
+    --app-surface-subtle: var(--mat-sys-surface-container-low);
+    --app-surface-emphasis: var(--mat-sys-surface-container-high);
 }
 
 body {

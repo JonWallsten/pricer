@@ -235,6 +235,36 @@ You are a dedicated Angular developer who thrives on leveraging the absolute lat
 
 All user-visible strings go through `I18nService`. Never hardcode UI strings — always add keys to both the interface, the `en` object, and the `sv` object in `src/app/i18n.service.ts`.
 
+### Styling system
+
+The app uses a layered styling structure:
+
+- Global Material theme and core CSS variables live in `src/material-theme.scss`
+- Shared app-level design tokens and utilities live in `src/styles.scss`
+- Component and page SCSS files should consume those shared tokens/utilities instead of redefining them
+
+Important conventions:
+
+- Prefer Material/system tokens such as `--mat-sys-*` for color and surface values
+- Prefer app-level shared tokens in `src/styles.scss` for widths, radii, borders, and badge sizing:
+  `--app-content-narrow`, `--app-content-medium`, `--app-content-wide`
+  `--app-radius-sm`, `--app-radius-md`, `--app-radius-lg`
+  `--app-border-subtle`
+  `--app-badge-*`
+- Prefer semantic app surface aliases from `src/material-theme.scss` when appropriate:
+  `--app-surface-raised`, `--app-surface-subtle`, `--app-surface-emphasis`
+- Use shared layout utilities for page shells:
+  `.page-container`, `.page-container--narrow`, `.page-container--medium`, `.page-container--wide`
+- Use the shared global `.badge` utility and its modifiers (`.badge--success`, `.badge--error`, `.badge--warning`, `.badge--muted`) instead of creating page-local badge variants
+- If a style pattern appears in more than one page, move it into the shared layer instead of copying it again
+- Do not add new hardcoded page widths or duplicated badge/card primitives without checking the shared token layer first
+
+When making styling changes:
+
+1. Check whether the change belongs in `src/styles.scss` or `src/material-theme.scss`
+2. Reuse shared tokens/utilities before adding page-local values
+3. Keep page SCSS focused on layout/composition, not redefinition of shared primitives
+
 ### Credential files
 
 | File                     | Contents                               | Deployed to server? |

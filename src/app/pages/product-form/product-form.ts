@@ -7,11 +7,9 @@ import {
     computed,
     OnInit,
     OnDestroy,
-    effect,
-    untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -51,10 +49,12 @@ export class ProductForm implements OnInit, OnDestroy {
     readonly id = input<string>();
 
     protected readonly saving = signal(false);
-    protected readonly fetching = signal(false);
-    protected readonly preview = signal<PreviewResult | null>(null);
     protected readonly errorMsg = signal('');
     protected readonly isEdit = signal(false);
+
+    /** Per-URL preview state: index → preview data */
+    protected readonly previews = signal<Map<number, PreviewResult>>(new Map());
+    protected readonly fetchingIndexes = signal<Set<number>>(new Set());
 
     /** Discount chip percentages */
     protected readonly discountOptions = [5, 10, 25, 50] as const;
@@ -63,83 +63,159 @@ export class ProductForm implements OnInit, OnDestroy {
 
     protected readonly form = this.fb.nonNullable.group({
         name: ['', Validators.required],
-        url: ['', [Validators.required, Validators.pattern(/^https?:\/\/.+/)]],
-        css_selector: [''],
+        urls: this.fb.array<FormGroup>([]),
     });
 
-    /** Target price computed from preview price and selected discount */
+    get urlsArray(): FormArray<FormGroup> {
+        return this.form.controls.urls;
+    }
+
+    /** First preview with a valid price — used for discount chips */
+    protected readonly firstPreviewPrice = computed(() => {
+        const map = this.previews();
+        for (const [, p] of map) {
+            if (p?.price) return p;
+        }
+        return null;
+    });
+
+    /** Target price computed from first preview price and selected discount */
     protected readonly targetPrice = computed(() => {
-        const p = this.preview();
+        const p = this.firstPreviewPrice();
         const d = this.selectedDiscount();
         if (!p?.price || d === null) return null;
         return Math.round(p.price * (1 - d / 100));
     });
 
-    private urlDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-    private urlFetchEffect = effect(() => {
-        // Re-read the signal that triggers this effect
-        const currentPreview = this.preview();
-        // We'll use manual URL watching instead (see ngOnInit)
-        void currentPreview;
-    });
+    private urlDebounceTimers = new Map<number, ReturnType<typeof setTimeout>>();
+    private urlSubscriptions: (() => void)[] = [];
+
+    /** Existing URL IDs when editing — needed for diff on save */
+    private existingUrlIds = new Map<number, number>(); // formIndex → url row id
 
     async ngOnInit() {
         const productId = this.id();
         if (productId && productId !== 'new') {
             this.isEdit.set(true);
             try {
-                const { product } = await this.api.getProduct(Number(productId));
-                this.form.patchValue({
-                    name: product.name,
-                    url: product.url,
-                    css_selector: product.css_selector ?? '',
-                });
+                const { product, urls } = await this.api.getProduct(Number(productId));
+                this.form.patchValue({ name: product.name });
+
+                // Populate URL rows from existing product_urls
+                for (const u of urls) {
+                    const idx = this.urlsArray.length;
+                    this.addUrlRow(u.url, u.css_selector ?? '');
+                    this.existingUrlIds.set(idx, u.id);
+                }
             } catch {
                 this.router.navigate(['/']);
             }
-        }
-
-        // Watch URL field for auto-preview (new products only)
-        if (!this.isEdit()) {
-            this.form.controls.url.valueChanges.subscribe((url) => {
-                if (this.urlDebounceTimer) {
-                    clearTimeout(this.urlDebounceTimer);
-                }
-                if (url && /^https?:\/\/.+/.test(url)) {
-                    this.urlDebounceTimer = setTimeout(() => this.fetchPreview(), 800);
-                } else {
-                    this.preview.set(null);
-                }
-            });
+        } else {
+            // Start with one empty URL row for new products
+            this.addUrlRow();
         }
     }
 
     ngOnDestroy() {
-        if (this.urlDebounceTimer) {
-            clearTimeout(this.urlDebounceTimer);
+        for (const timer of this.urlDebounceTimers.values()) {
+            clearTimeout(timer);
+        }
+        for (const unsub of this.urlSubscriptions) {
+            unsub();
         }
     }
 
-    private async fetchPreview() {
-        const url = this.form.controls.url.value;
-        const cssSelector = this.form.controls.css_selector.value || null;
+    addUrlRow(url = '', cssSelector = '') {
+        const group = this.fb.nonNullable.group({
+            url: [url, [Validators.required, Validators.pattern(/^https?:\/\/.+/)]],
+            css_selector: [cssSelector],
+        });
+
+        this.urlsArray.push(group);
+        const idx = this.urlsArray.length - 1;
+
+        // Watch URL field for auto-preview on new products
+        if (!this.isEdit()) {
+            const sub = group.controls.url.valueChanges.subscribe((val) => {
+                const timer = this.urlDebounceTimers.get(idx);
+                if (timer) clearTimeout(timer);
+                if (val && /^https?:\/\/.+/.test(val)) {
+                    this.urlDebounceTimers.set(
+                        idx,
+                        setTimeout(() => this.fetchPreview(idx), 800),
+                    );
+                } else {
+                    this.previews.update((m) => {
+                        const next = new Map(m);
+                        next.delete(idx);
+                        return next;
+                    });
+                }
+            });
+            this.urlSubscriptions.push(() => sub.unsubscribe());
+        }
+    }
+
+    removeUrlRow(index: number) {
+        this.urlsArray.removeAt(index);
+        // Clean up preview and fetching state
+        this.previews.update((m) => {
+            const next = new Map(m);
+            next.delete(index);
+            // Re-key entries above this index
+            const reKeyed = new Map<number, PreviewResult>();
+            for (const [k, v] of next) {
+                reKeyed.set(k > index ? k - 1 : k, v);
+            }
+            return reKeyed;
+        });
+        this.fetchingIndexes.update((s) => {
+            const next = new Set<number>();
+            for (const k of s) {
+                if (k === index) continue;
+                next.add(k > index ? k - 1 : k);
+            }
+            return next;
+        });
+        // Re-key existing URL IDs
+        const updated = new Map<number, number>();
+        for (const [k, v] of this.existingUrlIds) {
+            if (k === index) continue;
+            updated.set(k > index ? k - 1 : k, v);
+        }
+        this.existingUrlIds = updated;
+    }
+
+    private async fetchPreview(index: number) {
+        const group = this.urlsArray.at(index);
+        if (!group) return;
+        const url = group.controls['url'].value;
+        const cssSelector = group.controls['css_selector'].value || null;
         if (!url) return;
 
-        this.fetching.set(true);
-        this.preview.set(null);
+        this.fetchingIndexes.update((s) => new Set(s).add(index));
+        this.previews.update((m) => {
+            const next = new Map(m);
+            next.delete(index);
+            return next;
+        });
 
         try {
             const result = await this.api.previewUrl(url, cssSelector);
-            this.preview.set(result);
+            this.previews.update((m) => new Map(m).set(index, result));
 
-            // Auto-fill name from page title if name is empty
-            if (!this.form.controls.name.value && result.page_title) {
+            // Auto-fill name from first URL's page title if name is empty
+            if (index === 0 && !this.form.controls.name.value && result.page_title) {
                 this.form.controls.name.setValue(result.page_title);
             }
         } catch {
-            this.preview.set(null);
+            // Ignore preview errors
         } finally {
-            this.fetching.set(false);
+            this.fetchingIndexes.update((s) => {
+                const next = new Set(s);
+                next.delete(index);
+                return next;
+            });
         }
     }
 
@@ -147,26 +223,25 @@ export class ProductForm implements OnInit, OnDestroy {
         this.selectedDiscount.set(this.selectedDiscount() === pct ? null : pct);
     }
 
-    formatSelectorOnBlur() {
-        const val = this.form.controls.css_selector.value.trim();
+    formatSelectorOnBlur(index: number) {
+        const group = this.urlsArray.at(index);
+        if (!group) return;
+        const val = (group.controls['css_selector'].value as string).trim();
         if (!val) return;
 
         let formatted = val;
-        // Bare attribute like data-price → [data-price]
         if (
             /^[a-z][a-z0-9-]*$/i.test(formatted) &&
             !formatted.startsWith('.') &&
             !formatted.startsWith('#')
         ) {
             formatted = `[${formatted}]`;
-        }
-        // attribute=value like data-price='test' → [data-price='test']
-        else if (/^[a-z][a-z0-9-]*=.+$/i.test(formatted) && !formatted.startsWith('[')) {
+        } else if (/^[a-z][a-z0-9-]*=.+$/i.test(formatted) && !formatted.startsWith('[')) {
             formatted = `[${formatted}]`;
         }
 
         if (formatted !== val) {
-            this.form.controls.css_selector.setValue(formatted);
+            group.controls['css_selector'].setValue(formatted);
         }
     }
 
@@ -176,18 +251,22 @@ export class ProductForm implements OnInit, OnDestroy {
         this.errorMsg.set('');
 
         const val = this.form.getRawValue();
-        const body = {
-            name: val.name,
-            url: val.url,
-            css_selector: val.css_selector || null,
-        };
+        const urls = val.urls.map((u, i) => {
+            const entry: { id?: number; url: string; css_selector: string | null } = {
+                url: u['url'] as string,
+                css_selector: (u['css_selector'] as string) || null,
+            };
+            const existingId = this.existingUrlIds.get(i);
+            if (existingId) entry.id = existingId;
+            return entry;
+        });
 
         try {
             if (this.isEdit()) {
-                await this.api.updateProduct(Number(this.id()), body);
+                await this.api.updateProduct(Number(this.id()), { name: val.name, urls });
                 this.router.navigate(['/products', this.id()]);
             } else {
-                const product = await this.api.createProduct(body);
+                const product = await this.api.createProduct({ name: val.name, urls });
 
                 // Auto-create alert if a discount is selected and we have a target price
                 const target = this.targetPrice();

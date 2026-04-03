@@ -27,13 +27,14 @@ Built with **Angular 21+** · Standalone components · Signals · PHP API · MyS
 | 🔍   | **Smart price extraction**  | Extracts prices from JSON-LD → meta tags → microdata → CSS selector fallback — works on most e-commerce sites  |
 | 🔔   | **Price drop alerts**       | Set target prices per product and receive email notifications when the price drops below your target           |
 | 📉   | **Price history**           | Chart.js line chart with period selector (week, month, 3 months, year, all) — one data point per day           |
+| 🌐   | **Multi-site tracking**     | Track the same product across multiple retailer URLs — lowest price is shown, with per-site details            |
 | ⚡   | **Auto-fetch on URL paste** | Price, image, name, and availability are detected instantly when entering a URL — no save needed first         |
 | 🏷️   | **Discount chips**          | Quick alert creation with 5%, 10%, 25%, 50% discount chips when adding a product                               |
 | 📦   | **Availability tracking**   | Detects in stock / out of stock / pre-order status and notifies when items come back in stock                  |
 | 🖼️   | **Product images**          | Auto-extracted from structured data (JSON-LD, og:image, microdata) and displayed on dashboard and detail pages |
 | ⏱️   | **Hourly price checks**     | Cron job checks all tracked products every hour and sends alerts when targets are hit                          |
 | 🔐   | **Google login**            | OAuth via Google Identity Services with JWT session in HttpOnly cookies                                        |
-| 👤   | **User approval system**    | New users must be approved by admin before accessing the app — admin is auto-approved via `ADMIN_EMAIL` config |
+| 👤   | **User approval system**    | New users must be approved by admin before accessing the app — the admin account is identified by `ADMIN_GOOGLE_ID` |
 | 🛡️   | **Admin panel**             | In-app user management page to approve or reject users                                                         |
 | 🇸🇪🇬🇧 | **English & Swedish**       | Full i18n with auto-detection from browser language                                                            |
 | 🌓   | **Three-way theme toggle**  | System / dark / light theme, persisted to localStorage                                                         |
@@ -166,7 +167,7 @@ Three separate credential files keep secrets organised:
 
 | File                     | Contents                                                                      | Committed? | Deployed to server? |
 | ------------------------ | ----------------------------------------------------------------------------- | :--------: | :-----------------: |
-| `.credentials.env`       | DB host/name/user/pass, Google OAuth client ID, JWT secret, SMTP, ADMIN_EMAIL |     No     |         Yes         |
+| `.credentials.env`       | DB host/name/user/pass, Google OAuth client ID, JWT secret, SMTP, admin identity |     No     |         Yes         |
 | `.credentials.local.env` | Local overrides (e.g. different DB host for dev)                              |     No     |         No          |
 | `.ftp.env`               | FTP host/user/pass/path for FTP deployment                                    |     No     |         No          |
 
@@ -200,9 +201,16 @@ npm run db:migrate -- --remote
 3. Add **Authorized JavaScript origins**: `http://localhost:4200`, `https://yourdomain.com`
 4. Copy the client ID into `.credentials.env`
 
-### 4. Admin email
+### 4. Admin identity
 
-Set `ADMIN_EMAIL` in `.credentials.env` to your Google account email. This user is auto-approved on first login and gets access to the admin panel. All other users must be approved manually.
+Set `ADMIN_GOOGLE_ID` in `.credentials.env` to your Google account's `sub` claim. That same value is stored as `users.google_id` after login. The configured Google account is auto-approved on login and gets access to the admin panel.
+
+Ways to find it:
+
+- Log in once, then read your row from the `users` table and copy `google_id`.
+- Or decode a Google ID token and copy the `sub` claim.
+
+`ADMIN_EMAIL` can still be kept as a contact/reference value, but admin access now keys off `ADMIN_GOOGLE_ID`, not the email string.
 
 ---
 

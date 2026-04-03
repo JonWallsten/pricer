@@ -1,0 +1,75 @@
+:root {
+    --app-content-narrow: 540px;
+    --app-content-medium: 600px;
+    --app-content-wide: 840px;
+
+    --app-radius-sm: 12px;
+    --app-radius-md: 16px;
+    --app-radius-lg: 20px;
+
+    --app-border-subtle: 1px solid var(--mat-sys-outline-variant);
+
+    --app-badge-font-size: 12px;
+    --app-badge-font-size-mobile: 13px;
+    --app-badge-padding: 4px 12px;
+    --app-badge-padding-mobile: 6px 14px;
+    --app-badge-radius: 9999px;
+}
+
+.page-container {
+    width: min(100%, var(--app-content-width, var(--app-content-narrow)));
+    margin-inline: auto;
+    padding-inline: 16px;
+    box-sizing: border-box;
+}
+
+.page-container--narrow {
+    --app-content-width: var(--app-content-narrow);
+}
+
+.page-container--medium {
+    --app-content-width: var(--app-content-medium);
+}
+
+.page-container--wide {
+    --app-content-width: var(--app-content-wide);
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--app-badge-font-size);
+    font-weight: 500;
+    padding: var(--app-badge-padding);
+    border-radius: var(--app-badge-radius);
+    white-space: nowrap;
+    line-height: 1.1;
+
+    &--success {
+        background: light-dark(#e8f5e9, #1b3a1f);
+        color: light-dark(#2e7d32, #81c784);
+    }
+
+    &--error {
+        background: light-dark(#ffebee, #3e1214);
+        color: light-dark(#c62828, #ef9a9a);
+    }
+
+    &--warning {
+        background: light-dark(#fff3e0, #3e2700);
+        color: light-dark(#e65100, #ffb74d);
+    }
+
+    &--muted {
+        background: light-dark(#f5f5f5, #2c2c2c);
+        color: light-dark(#757575, #bdbdbd);
+    }
+}
+
+@media (max-width: 480px) {
+    .badge {
+        font-size: var(--app-badge-font-size-mobile);
+        padding: var(--app-badge-padding-mobile);
+    }
+}

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import {
     Product,
+    ProductUrl,
     Alert,
     ExtractionResult,
     PreviewResult,
@@ -19,7 +20,9 @@ export class ApiService {
         return data.products;
     }
 
-    async getProduct(id: number): Promise<{ product: Product; alerts: Alert[] }> {
+    async getProduct(
+        id: number,
+    ): Promise<{ product: Product; alerts: Alert[]; urls: ProductUrl[] }> {
         const res = await fetch(`api/products/${id}`, { credentials: 'include' });
         if (!res.ok) throw new Error('Failed to fetch product');
         return await res.json();
@@ -27,8 +30,7 @@ export class ApiService {
 
     async createProduct(body: {
         name: string;
-        url: string;
-        css_selector?: string | null;
+        urls: { url: string; css_selector?: string | null }[];
     }): Promise<Product> {
         const res = await fetch('api/products', {
             method: 'POST',
@@ -46,7 +48,10 @@ export class ApiService {
 
     async updateProduct(
         id: number,
-        body: Partial<Pick<Product, 'name' | 'url' | 'css_selector'>>,
+        body: {
+            name?: string;
+            urls?: { id?: number; url: string; css_selector?: string | null }[];
+        },
     ): Promise<Product> {
         const res = await fetch(`api/products/${id}`, {
             method: 'PUT',
@@ -70,12 +75,32 @@ export class ApiService {
         if (!res.ok) throw new Error('Failed to delete product');
     }
 
-    async checkPrice(id: number): Promise<{ product: Product; extraction: ExtractionResult }> {
+    async checkPrice(
+        id: number,
+    ): Promise<{
+        product: Product;
+        extraction: ExtractionResult;
+        url_results: { url_id: number; url: string; extraction: ExtractionResult }[];
+    }> {
         const res = await fetch(`api/products/${id}/check`, {
             method: 'POST',
             credentials: 'include',
         });
         if (!res.ok) throw new Error('Failed to check price');
+        return await res.json();
+    }
+
+    async checkUrl(
+        productId: number,
+        urlId: number,
+    ): Promise<{ product: Product; url: ProductUrl; extraction: ExtractionResult }> {
+        const res = await fetch(`api/products/${productId}/check-url`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url_id: urlId }),
+        });
+        if (!res.ok) throw new Error('Failed to check URL');
         return await res.json();
     }
 

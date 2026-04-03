@@ -1,7 +1,5 @@
 .form-container {
-    padding: 16px;
-    max-width: 540px;
-    margin: 0 auto;
+    padding-block: 16px;
 }
 
 .product-form {
@@ -9,6 +7,38 @@
     flex-direction: column;
     gap: 16px;
     margin-top: 16px;
+}
+
+.url-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: var(--app-radius-sm);
+    background: var(--app-surface-raised);
+    border: var(--app-border-subtle);
+}
+
+.url-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.url-row-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface-variant);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.url-remove-btn {
+    color: var(--mat-sys-error);
+}
+
+.add-url-btn {
+    align-self: flex-start;
 }
 
 .fetching-banner {
@@ -26,8 +56,8 @@
     display: flex;
     gap: 16px;
     padding: 16px;
-    border-radius: 12px;
-    background: var(--mat-sys-surface-container);
+    border-radius: var(--app-radius-sm);
+    background: var(--app-surface-raised);
     align-items: center;
 }
 
@@ -61,36 +91,13 @@
     color: var(--mat-sys-error);
 }
 
-.availability-badge {
-    font-size: 12px;
-    font-weight: 500;
-    padding: 2px 8px;
-    border-radius: 12px;
-    width: fit-content;
-
-    &.availability--in-stock {
-        background: light-dark(#e8f5e9, #1b3a1f);
-        color: light-dark(#2e7d32, #81c784);
-    }
-
-    &.availability--out-of-stock {
-        background: light-dark(#ffebee, #3e1214);
-        color: light-dark(#c62828, #ef9a9a);
-    }
-
-    &.availability--preorder {
-        background: light-dark(#fff3e0, #3e2700);
-        color: light-dark(#e65100, #ffb74d);
-    }
-}
-
 .alert-section {
     display: flex;
     flex-direction: column;
     gap: 12px;
     padding: 16px;
-    border-radius: 12px;
-    background: var(--mat-sys-surface-container);
+    border-radius: var(--app-radius-sm);
+    background: var(--app-surface-raised);
 
     h3 {
         margin: 0;

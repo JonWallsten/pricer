@@ -1,4 +1,4 @@
-<div class="form-container">
+<div class="form-container page-container page-container--narrow">
     <mat-card>
         <mat-card-header>
             <mat-card-title>
@@ -11,79 +11,117 @@
         </mat-card-header>
         <mat-card-content>
             <form [formGroup]="form" (ngSubmit)="save()" class="product-form">
-                <mat-form-field appearance="outline">
-                    <mat-label>{{ i18n.strings().productUrl }}</mat-label>
-                    <input
-                        matInput
-                        formControlName="url"
-                        type="url"
-                        placeholder="https://..."
-                        autocomplete="off"
-                    />
-                    @if (form.controls.url.hasError('required')) {
-                        <mat-error>{{ i18n.strings().required }}</mat-error>
-                    } @else if (form.controls.url.hasError('pattern')) {
-                        <mat-error>{{ i18n.strings().invalidUrl }}</mat-error>
-                    }
-                </mat-form-field>
-
-                @if (fetching()) {
-                    <div class="fetching-banner">
-                        <mat-spinner diameter="18"></mat-spinner>
-                        <span>{{ i18n.strings().fetchingPrice }}</span>
-                    </div>
-                }
-
-                @if (preview(); as prev) {
-                    <div class="preview-card">
-                        @if (prev.image_url) {
-                            <img
-                                [src]="prev.image_url"
-                                class="preview-image"
-                                alt=""
-                                referrerpolicy="no-referrer"
-                            />
-                        }
-                        <div class="preview-info">
-                            @if (prev.price !== null) {
-                                <span class="preview-price">{{
-                                    formatPrice(prev.price, prev.currency)
-                                }}</span>
-                                <span class="preview-method"
-                                    >{{ prev.method }} · {{ i18n.strings().autoDetected }}</span
+                <!-- URL rows -->
+                @for (urlGroup of urlsArray.controls; track $index; let i = $index) {
+                    <div class="url-row" [formGroup]="urlGroup">
+                        <div class="url-row-header">
+                            <span class="url-row-label">{{ i18n.strings().site }} {{ i + 1 }}</span>
+                            @if (urlsArray.length > 1) {
+                                <button
+                                    mat-icon-button
+                                    type="button"
+                                    class="url-remove-btn"
+                                    (click)="removeUrlRow(i)"
+                                    [attr.aria-label]="i18n.strings().removeUrl"
                                 >
-                            } @else if (prev.error) {
-                                <span class="preview-error">{{ prev.error }}</span>
-                            }
-                            @if (prev.availability && prev.availability !== 'unknown') {
-                                <span
-                                    class="availability-badge"
-                                    [class.availability--in-stock]="
-                                        prev.availability === 'in_stock'
-                                    "
-                                    [class.availability--out-of-stock]="
-                                        prev.availability === 'out_of_stock'
-                                    "
-                                    [class.availability--preorder]="
-                                        prev.availability === 'preorder'
-                                    "
-                                >
-                                    @switch (prev.availability) {
-                                        @case ('in_stock') {
-                                            {{ i18n.strings().inStock }}
-                                        }
-                                        @case ('out_of_stock') {
-                                            {{ i18n.strings().outOfStock }}
-                                        }
-                                        @case ('preorder') {
-                                            {{ i18n.strings().preorder }}
-                                        }
-                                    }
-                                </span>
+                                    <mat-icon>close</mat-icon>
+                                </button>
                             }
                         </div>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>{{ i18n.strings().productUrl }}</mat-label>
+                            <input
+                                matInput
+                                formControlName="url"
+                                type="url"
+                                placeholder="https://..."
+                                autocomplete="off"
+                            />
+                            @if (urlGroup.controls['url'].hasError('required')) {
+                                <mat-error>{{ i18n.strings().required }}</mat-error>
+                            } @else if (urlGroup.controls['url'].hasError('pattern')) {
+                                <mat-error>{{ i18n.strings().invalidUrl }}</mat-error>
+                            }
+                        </mat-form-field>
+
+                        @if (fetchingIndexes().has(i)) {
+                            <div class="fetching-banner">
+                                <mat-spinner diameter="18"></mat-spinner>
+                                <span>{{ i18n.strings().fetchingPrice }}</span>
+                            </div>
+                        }
+
+                        @if (previews().get(i); as prev) {
+                            <div class="preview-card">
+                                @if (prev.image_url) {
+                                    <img
+                                        [src]="prev.image_url"
+                                        class="preview-image"
+                                        alt=""
+                                        referrerpolicy="no-referrer"
+                                    />
+                                }
+                                <div class="preview-info">
+                                    @if (prev.price !== null) {
+                                        <span class="preview-price">{{
+                                            formatPrice(prev.price, prev.currency)
+                                        }}</span>
+                                        <span class="preview-method"
+                                            >{{ prev.method }} ·
+                                            {{ i18n.strings().autoDetected }}</span
+                                        >
+                                    } @else if (prev.error) {
+                                        <span class="preview-error">{{ prev.error }}</span>
+                                    }
+                                    @if (prev.availability && prev.availability !== 'unknown') {
+                                        <span
+                                            class="badge"
+                                            [class.badge--success]="
+                                                prev.availability === 'in_stock'
+                                            "
+                                            [class.badge--error]="
+                                                prev.availability === 'out_of_stock'
+                                            "
+                                            [class.badge--warning]="
+                                                prev.availability === 'preorder'
+                                            "
+                                        >
+                                            @switch (prev.availability) {
+                                                @case ('in_stock') {
+                                                    {{ i18n.strings().inStock }}
+                                                }
+                                                @case ('out_of_stock') {
+                                                    {{ i18n.strings().outOfStock }}
+                                                }
+                                                @case ('preorder') {
+                                                    {{ i18n.strings().preorder }}
+                                                }
+                                            }
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>{{ i18n.strings().cssSelector }}</mat-label>
+                            <input
+                                matInput
+                                formControlName="css_selector"
+                                placeholder=".price-current"
+                                autocomplete="off"
+                                (blur)="formatSelectorOnBlur(i)"
+                            />
+                            <mat-hint>{{ i18n.strings().cssSelectorHint }}</mat-hint>
+                        </mat-form-field>
                     </div>
                 }
+
+                <button mat-stroked-button type="button" class="add-url-btn" (click)="addUrlRow()">
+                    <mat-icon>add</mat-icon>
+                    {{ i18n.strings().addUrl }}
+                </button>
 
                 <mat-form-field appearance="outline">
                     <mat-label>{{ i18n.strings().productName }}</mat-label>
@@ -93,19 +131,7 @@
                     }
                 </mat-form-field>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>{{ i18n.strings().cssSelector }}</mat-label>
-                    <input
-                        matInput
-                        formControlName="css_selector"
-                        placeholder=".price-current"
-                        autocomplete="off"
-                        (blur)="formatSelectorOnBlur()"
-                    />
-                    <mat-hint>{{ i18n.strings().cssSelectorHint }}</mat-hint>
-                </mat-form-field>
-
-                @if (!isEdit() && preview()?.price; as previewPrice) {
+                @if (!isEdit() && firstPreviewPrice()?.price; as previewPrice) {
                     <div class="alert-section">
                         <h3>{{ i18n.strings().notifyWhenDropsTo }}</h3>
                         <div class="discount-chips">

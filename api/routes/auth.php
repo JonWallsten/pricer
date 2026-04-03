@@ -47,9 +47,14 @@ function handleAuthRoutes(string $method, string $path): void
         $email    = $payload['email'] ?? '';
         $name     = $payload['name'] ?? '';
         $picture  = $payload['picture'] ?? null;
+        $emailVerified = isGoogleEmailVerified($payload['email_verified'] ?? false);
 
         if ($googleId === '' || $email === '') {
             sendJson(['error' => 'Incomplete token data'], 400);
+            return;
+        }
+        if (!$emailVerified) {
+            sendJson(['error' => 'Google email is not verified'], 401);
             return;
         }
 
@@ -82,7 +87,7 @@ function handleAuthRoutes(string $method, string $path): void
         }
 
         // Auto-approve admin
-        $isAdmin = ADMIN_EMAIL !== '' && $user['email'] === ADMIN_EMAIL;
+        $isAdmin = isConfiguredAdminGoogleId($googleId);
         if ($isAdmin && !(int) $user['is_approved']) {
             $db->prepare('UPDATE users SET is_approved = 1 WHERE id = :id')
                 ->execute([':id' => $user['id']]);
@@ -119,7 +124,7 @@ function handleAuthRoutes(string $method, string $path): void
         }
 
         $db = getDb();
-        $stmt = $db->prepare('SELECT id, email, name, picture_url, is_approved FROM users WHERE id = :id');
+        $stmt = $db->prepare('SELECT id, email, name, picture_url, is_approved, google_id FROM users WHERE id = :id');
         $stmt->execute([':id' => $authUser['user_id']]);
         $user = $stmt->fetch();
 
@@ -135,7 +140,7 @@ function handleAuthRoutes(string $method, string $path): void
                 'name'        => $user['name'],
                 'picture_url' => $user['picture_url'],
                 'is_approved' => (bool) (int) $user['is_approved'],
-                'is_admin'    => ADMIN_EMAIL !== '' && $user['email'] === ADMIN_EMAIL,
+                'is_admin'    => isConfiguredAdminGoogleId((string) $user['google_id']),
             ],
         ]);
         return;

@@ -20,6 +20,21 @@ export interface AdminUser {
 
 export type Availability = 'in_stock' | 'out_of_stock' | 'preorder' | 'unknown';
 
+export interface ProductUrl {
+    id: number;
+    product_id: number;
+    url: string;
+    css_selector: string | null;
+    current_price: number | null;
+    currency: string;
+    image_url: string | null;
+    availability: Availability;
+    last_checked_at: string | null;
+    last_check_status: 'pending' | 'success' | 'error' | null;
+    last_check_error: string | null;
+    created_at: string;
+}
+
 export interface Product {
     id: number;
     user_id: number;
@@ -36,6 +51,8 @@ export interface Product {
     created_at: string;
     updated_at: string;
     active_alerts?: number;
+    urls_count?: number;
+    urls?: ProductUrl[];
 }
 
 export interface Alert {

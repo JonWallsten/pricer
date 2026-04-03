@@ -18,7 +18,7 @@ mat-toolbar {
     display: flex;
     align-items: center;
     width: 100%;
-    max-width: 840px;
+    max-width: var(--app-content-wide);
     margin: 0 auto;
     gap: 4px;
 }
