@@ -259,6 +259,31 @@ describe('Products', () => {
         expect(Array.isArray(data.history)).toBe(true);
     });
 
+    it('GET /products/:id/matches returns persisted match candidates JSON', async () => {
+        const { status, data } = await api('GET', `/products/${productId}/matches`, {
+            token: jwt,
+        });
+        expect(data._raw).toBeUndefined();
+        expect(status).toBe(200);
+        expect(Array.isArray(data.matches)).toBe(true);
+    });
+
+    it('POST /products/:id/discover-matches returns JSON and fails gracefully when unavailable', async () => {
+        const { status, data } = await api('POST', `/products/${productId}/discover-matches`, {
+            token: jwt,
+            body: { force: false },
+        });
+        expect(data._raw).toBeUndefined();
+        expect([200, 503]).toContain(status);
+        if (status === 200) {
+            expect(Array.isArray(data.matches)).toBe(true);
+            expect(Array.isArray(data.queries)).toBe(true);
+            expect(typeof data.searches_run).toBe('number');
+        } else {
+            expect(typeof data.error).toBe('string');
+        }
+    });
+
     it('DELETE /products/:id removes the product', async () => {
         const { status, data } = await api('DELETE', `/products/${productId}`, {
             token: jwt,

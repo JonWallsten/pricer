@@ -28,6 +28,7 @@ Built with **Angular 21+** · Standalone components · Signals · PHP API · MyS
 | 🔔   | **Price drop alerts**       | Set target prices per product and receive email notifications when the price drops below your target           |
 | 📉   | **Price history**           | Chart.js line chart with period selector (week, month, 3 months, year, all) — one data point per day           |
 | 🌐   | **Multi-site tracking**     | Track the same product across multiple retailer URLs — lowest price is shown, with per-site details            |
+| 🧭   | **Cross-store discovery**   | Find likely matching product pages at other stores with SerpApi discovery, structured extraction, and explainable confidence scores |
 | ⚡   | **Auto-fetch on URL paste** | Price, image, name, and availability are detected instantly when entering a URL — no save needed first         |
 | 🏷️   | **Discount chips**          | Quick alert creation with 5%, 10%, 25%, 50% discount chips when adding a product                               |
 | 📦   | **Availability tracking**   | Detects in stock / out of stock / pre-order status and notifies when items come back in stock                  |
@@ -122,17 +123,18 @@ api/
 ├── middleware.php          — requireAuth(), requireApproved()
 ├── routes/
 │   ├── auth.php           — Google OAuth, /auth/me, logout
-│   ├── products.php       — Product CRUD + manual price check + history
+│   ├── products.php       — Product CRUD + manual price check + history + match discovery
 │   ├── alerts.php         — Alert CRUD
 │   └── admin.php          — User list, approve, reject
 ├── lib/
 │   ├── price-scraper.php  — Price extraction (JSON-LD, meta, microdata, CSS)
+│   ├── product-match-discovery.php — Cross-store discovery, extraction, scoring, caching
 │   └── mailer.php         — Email notifications (SMTP + mail() fallback)
 └── cron/
     └── check-prices.php   — Hourly price check runner (CLI only)
 
 scripts/
-├── migrations/            — SQL migration files (001–007)
+├── migrations/            — SQL migration files (001–009)
 ├── db-migrate.mjs         — Migration runner
 └── deploy.mjs             — FTP deployment
 ```
@@ -251,6 +253,51 @@ node scripts/deploy.mjs --insecure-ftps     # allow invalid FTPS certs for this 
 - Product URLs must use `http` or `https` and resolve to a public host. Localhost, private-network, and reserved IP targets are rejected to reduce SSRF risk.
 - Redirect following is disabled during price scraping so a public product URL cannot bounce into an internal address.
 - FTPS certificate verification stays on by default during deploys; only use `--insecure-ftps` when you have verified the server and cannot fix its certificate yet.
+
+---
+
+## 🧭 Cross-store discovery
+
+Pricer can discover likely matching product pages at other stores for a tracked product.
+
+The first version is intentionally simple:
+
+- SerpApi is used only to discover candidate URLs
+- Product matching confidence is computed locally with deterministic heuristics
+- Search results and candidate fetches are cached aggressively to keep usage low
+- Each stored match includes a confidence score and human-readable reasons
+
+### How it works
+
+1. Normalize the tracked product title and structured fields
+2. Build one or two compact search queries
+3. Search with SerpApi
+4. Filter out noisy URLs and same-domain results
+5. Fetch a small set of candidate pages
+6. Extract JSON-LD/meta/DOM product signals
+7. Score the candidate using identifiers, title similarity, variant attributes, and price proximity
+8. Persist the best matches and show them on the product detail page
+
+### Configuration
+
+Add these optional values to `.credentials.env` if you want match discovery enabled:
+
+```bash
+SERPAPI_API_KEY=your_serpapi_key
+SERPAPI_SEARCH_COUNTRY=se
+SERPAPI_SEARCH_LOCALE=sv-SE
+```
+
+If `SERPAPI_API_KEY` is missing, the rest of the app still works normally, but match discovery requests will fail gracefully.
+
+### Cost controls
+
+- Search responses are cached for 7 days
+- Candidate fetch/extraction results are cached for 3 days
+- Failed candidate fetches are cached for 1 day
+- Each discovery run uses at most 2 queries, considers at most 10 results, and fetches at most 5 candidates
+
+The feature is designed for low-volume personal use, so deterministic heuristics and caching are favored over expensive or opaque approaches.
 
 ---
 

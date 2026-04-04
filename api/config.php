@@ -51,6 +51,9 @@ define('SMTP_FROM', $_ENV['SMTP_FROM'] ?? '');
 define('NOTIFICATION_FROM_EMAIL', $_ENV['NOTIFICATION_FROM_EMAIL'] ?? 'noreply@jonwallsten.com');
 define('ADMIN_EMAIL', $_ENV['ADMIN_EMAIL'] ?? '');
 define('ADMIN_GOOGLE_ID', $_ENV['ADMIN_GOOGLE_ID'] ?? '');
+define('SERPAPI_API_KEY', $_ENV['SERPAPI_API_KEY'] ?? '');
+define('SERPAPI_SEARCH_COUNTRY', $_ENV['SERPAPI_SEARCH_COUNTRY'] ?? 'se');
+define('SERPAPI_SEARCH_LOCALE', $_ENV['SERPAPI_SEARCH_LOCALE'] ?? 'sv-se');
 
 // ─── Validate critical secrets ────────────────────────────
 if (JWT_SECRET === '') {

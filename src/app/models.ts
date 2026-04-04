@@ -85,3 +85,56 @@ export interface PriceHistoryEntry {
     currency: string;
     recorded_at: string;
 }
+
+export type MatchConfidenceLabel = 'very_likely' | 'likely' | 'possible' | 'weak';
+
+export interface ProductMatchBreakdown {
+    total: number;
+    titleSimilarity?: number;
+    brandMatch?: number;
+    gtinMatch?: number;
+    mpnMatch?: number;
+    skuMatch?: number;
+    modelMatch?: number;
+    dimensionsMatch?: number;
+    colorMatch?: number;
+    categoryMatch?: number;
+    priceProximity?: number;
+    penalties?: number[];
+    reasons: string[];
+}
+
+export interface ProductMatchCandidate {
+    id: number;
+    source_product_id: number;
+    candidate_url: string;
+    candidate_domain: string;
+    candidate_title: string | null;
+    candidate_price: number | null;
+    candidate_currency: string | null;
+    confidence_score: number;
+    confidence_label: MatchConfidenceLabel;
+    reasons: string[];
+    breakdown: ProductMatchBreakdown;
+    extracted_brand: string | null;
+    extracted_model: string | null;
+    extracted_mpn: string | null;
+    extracted_gtin: string | null;
+    extracted_sku: string | null;
+    extracted_color: string | null;
+    extracted_size: string | null;
+    extracted_dimensions: string[];
+    image_url: string | null;
+    availability: Availability;
+    query_used: string | null;
+    serp_position: number | null;
+    last_searched_at: string;
+    last_fetched_at: string | null;
+    excluded: boolean;
+}
+
+export interface ProductMatchDiscoveryResponse {
+    queries: string[];
+    searches_run: number;
+    matches: ProductMatchCandidate[];
+}

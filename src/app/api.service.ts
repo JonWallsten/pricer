@@ -7,6 +7,8 @@ import {
     PreviewResult,
     PriceHistoryEntry,
     AdminUser,
+    ProductMatchCandidate,
+    ProductMatchDiscoveryResponse,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -123,6 +125,30 @@ export class ApiService {
         if (!res.ok) throw new Error('Failed to fetch history');
         const data = await res.json();
         return data.history;
+    }
+
+    async getProductMatches(id: number): Promise<ProductMatchCandidate[]> {
+        const res = await fetch(`api/products/${id}/matches`, { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to fetch product matches');
+        const data = await res.json();
+        return data.matches;
+    }
+
+    async discoverProductMatches(
+        id: number,
+        force = false,
+    ): Promise<ProductMatchDiscoveryResponse> {
+        const res = await fetch(`api/products/${id}/discover-matches`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ force }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to discover product matches');
+        }
+        return await res.json();
     }
 
     // ─── Alerts ───────────────────────────────────────────

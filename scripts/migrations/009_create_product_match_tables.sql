@@ -1,0 +1,61 @@
+CREATE TABLE IF NOT EXISTS product_match_search_cache (
+    key_hash        CHAR(64) PRIMARY KEY,
+    query           VARCHAR(500) NOT NULL,
+    provider        VARCHAR(32) NOT NULL DEFAULT 'serpapi',
+    locale          VARCHAR(32) NOT NULL DEFAULT 'sv-se',
+    country         VARCHAR(16) NOT NULL DEFAULT 'se',
+    result_urls_json MEDIUMTEXT NOT NULL,
+    raw_response_json MEDIUMTEXT NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at      DATETIME NOT NULL,
+    INDEX idx_expires_at (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_match_fetch_cache (
+    url_hash         CHAR(64) PRIMARY KEY,
+    original_url     TEXT NOT NULL,
+    final_url        TEXT NULL,
+    final_url_hash   CHAR(64) NULL,
+    domain           VARCHAR(255) NULL,
+    status           ENUM('success','error') NOT NULL,
+    error_message    TEXT NULL,
+    extracted_json   MEDIUMTEXT NULL,
+    fetched_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at       DATETIME NOT NULL,
+    INDEX idx_fetch_expires_at (expires_at),
+    INDEX idx_final_url_hash (final_url_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_match_candidates (
+    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    source_product_id   INT UNSIGNED NOT NULL,
+    candidate_url       TEXT NOT NULL,
+    candidate_url_hash  CHAR(64) NOT NULL,
+    candidate_domain    VARCHAR(255) NOT NULL,
+    candidate_title     VARCHAR(500) NULL,
+    candidate_price     DECIMAL(10,2) NULL,
+    candidate_currency  VARCHAR(10) NULL,
+    confidence_score    TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    confidence_label    ENUM('very_likely','likely','possible','weak') NOT NULL DEFAULT 'weak',
+    reasons_json        MEDIUMTEXT NOT NULL,
+    breakdown_json      MEDIUMTEXT NULL,
+    extracted_brand     VARCHAR(255) NULL,
+    extracted_model     VARCHAR(255) NULL,
+    extracted_mpn       VARCHAR(255) NULL,
+    extracted_gtin      VARCHAR(255) NULL,
+    extracted_sku       VARCHAR(255) NULL,
+    extracted_color     VARCHAR(255) NULL,
+    extracted_size      VARCHAR(255) NULL,
+    extracted_dimensions_json MEDIUMTEXT NULL,
+    image_url           VARCHAR(2048) NULL,
+    availability        ENUM('in_stock','out_of_stock','preorder','unknown') NOT NULL DEFAULT 'unknown',
+    query_used          VARCHAR(500) NULL,
+    serp_position       INT UNSIGNED NULL,
+    last_searched_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_fetched_at     DATETIME NULL,
+    excluded            TINYINT(1) NOT NULL DEFAULT 0,
+    CONSTRAINT fk_product_match_candidates_product FOREIGN KEY (source_product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_product_match_candidate (source_product_id, candidate_url_hash),
+    INDEX idx_product_match_candidates_product (source_product_id),
+    INDEX idx_product_match_candidates_score (source_product_id, confidence_score)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

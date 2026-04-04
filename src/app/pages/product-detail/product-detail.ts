@@ -3,12 +3,12 @@ import {
     Component,
     inject,
     signal,
+    effect,
     input,
     OnInit,
     OnDestroy,
     ElementRef,
     viewChild,
-    AfterViewInit,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -23,7 +23,14 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { ApiService } from '../../api.service';
 import { I18nService } from '../../i18n.service';
-import { Product, ProductUrl, Alert, ExtractionResult, PriceHistoryEntry } from '../../models';
+import {
+    Product,
+    ProductUrl,
+    Alert,
+    ExtractionResult,
+    PriceHistoryEntry,
+    ProductMatchCandidate,
+} from '../../models';
 import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
 import { Chart, registerables } from 'chart.js';
 
@@ -67,9 +74,26 @@ export class ProductDetail implements OnInit, OnDestroy {
     protected readonly historyPeriod = signal<string>('month');
     protected readonly history = signal<PriceHistoryEntry[]>([]);
     protected readonly historyLoading = signal(false);
+    protected readonly matches = signal<ProductMatchCandidate[]>([]);
+    protected readonly matchesLoading = signal(false);
+    protected readonly discoveringMatches = signal(false);
+    protected readonly matchesError = signal<string | null>(null);
 
     readonly chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('priceChart');
     private chart: Chart | null = null;
+    private readonly syncChart = effect(() => {
+        const canvas = this.chartCanvas();
+        const data = this.history();
+        const loading = this.historyLoading();
+
+        if (loading || !canvas || data.length === 0) {
+            this.chart?.destroy();
+            this.chart = null;
+            return;
+        }
+
+        queueMicrotask(() => this.renderChart(data));
+    });
 
     protected readonly alertForm = this.fb.nonNullable.group({
         target_price: [0, [Validators.required, Validators.min(0.01)]],
@@ -77,6 +101,7 @@ export class ProductDetail implements OnInit, OnDestroy {
 
     async ngOnInit() {
         await this.loadProduct();
+        await this.loadMatches();
         await this.loadHistory();
     }
 
@@ -98,13 +123,24 @@ export class ProductDetail implements OnInit, OnDestroy {
         }
     }
 
+    async loadMatches() {
+        this.matchesLoading.set(true);
+        this.matchesError.set(null);
+        try {
+            const matches = await this.api.getProductMatches(Number(this.id()));
+            this.matches.set(matches);
+        } catch {
+            this.matches.set([]);
+        } finally {
+            this.matchesLoading.set(false);
+        }
+    }
+
     async loadHistory() {
         this.historyLoading.set(true);
         try {
             const data = await this.api.getProductHistory(Number(this.id()), this.historyPeriod());
             this.history.set(data);
-            // Wait a tick for the canvas to be in the DOM
-            setTimeout(() => this.renderChart(data), 0);
         } catch {
             this.history.set([]);
         } finally {
@@ -129,9 +165,12 @@ export class ProductDetail implements OnInit, OnDestroy {
         const labels = data.map((d) => d.recorded_at);
         const prices = data.map((d) => d.price);
 
-        // Get CSS variable for primary color
         const style = getComputedStyle(document.documentElement);
         const primary = style.getPropertyValue('--mat-sys-primary').trim() || '#1976d2';
+        const text = style.getPropertyValue('--mat-sys-on-surface-variant').trim() || '#6b7280';
+        const grid = style.getPropertyValue('--mat-sys-outline-variant').trim() || '#d1d5db';
+        const primaryFill = this.withAlpha(primary, 0.16);
+        const pointRadius = data.length === 1 ? 6 : data.length > 30 ? 0 : 4;
 
         this.chart = new Chart(ctx, {
             type: 'line',
@@ -142,11 +181,16 @@ export class ProductDetail implements OnInit, OnDestroy {
                         label: this.i18n.strings().currentPrice,
                         data: prices,
                         borderColor: primary,
-                        backgroundColor: primary + '22',
+                        backgroundColor: primaryFill,
                         fill: true,
                         tension: 0.3,
-                        pointRadius: data.length > 30 ? 0 : 4,
-                        pointHoverRadius: 6,
+                        borderWidth: 3,
+                        pointRadius,
+                        pointHoverRadius: Math.max(pointRadius + 2, 6),
+                        pointBackgroundColor: primary,
+                        pointBorderColor: primary,
+                        pointBorderWidth: 0,
+                        showLine: data.length > 1,
                     },
                 ],
             },
@@ -156,6 +200,7 @@ export class ProductDetail implements OnInit, OnDestroy {
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        displayColors: false,
                         callbacks: {
                             label: (ctx) => {
                                 const val = ctx.parsed.y;
@@ -167,18 +212,56 @@ export class ProductDetail implements OnInit, OnDestroy {
                 },
                 scales: {
                     x: {
-                        ticks: { maxTicksLimit: 8 },
+                        ticks: {
+                            maxTicksLimit: 8,
+                            color: text,
+                        },
                         grid: { display: false },
+                        border: { display: false },
                     },
                     y: {
                         beginAtZero: false,
                         ticks: {
+                            color: text,
                             callback: (val) => `${val}`,
                         },
+                        grid: {
+                            color: this.withAlpha(grid, 0.75),
+                        },
+                        border: { display: false },
                     },
                 },
             },
         });
+    }
+
+    private withAlpha(color: string, alpha: number): string {
+        const value = color.trim();
+
+        if (value.startsWith('#')) {
+            let hex = value.slice(1);
+            if (hex.length === 3) {
+                hex = hex
+                    .split('')
+                    .map((char) => char + char)
+                    .join('');
+            }
+            if (hex.length === 6) {
+                const r = parseInt(hex.slice(0, 2), 16);
+                const g = parseInt(hex.slice(2, 4), 16);
+                const b = parseInt(hex.slice(4, 6), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+        }
+
+        const rgbMatch = value.match(
+            /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+[\d.]+)?\s*\)/i,
+        );
+        if (rgbMatch) {
+            return `rgba(${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}, ${alpha})`;
+        }
+
+        return value;
     }
 
     async checkPrice() {
@@ -212,6 +295,21 @@ export class ProductDetail implements OnInit, OnDestroy {
                 next.delete(urlId);
                 return next;
             });
+        }
+    }
+
+    async discoverMatches(force = false) {
+        this.discoveringMatches.set(true);
+        this.matchesError.set(null);
+        try {
+            const result = await this.api.discoverProductMatches(Number(this.id()), force);
+            this.matches.set(result.matches);
+        } catch (error) {
+            this.matchesError.set(
+                error instanceof Error ? error.message : this.i18n.strings().error,
+            );
+        } finally {
+            this.discoveringMatches.set(false);
         }
     }
 
@@ -305,6 +403,20 @@ export class ProductDetail implements OnInit, OnDestroy {
                 return s.preorder;
             default:
                 return s.availabilityUnknown;
+        }
+    }
+
+    getMatchConfidenceLabel(label: ProductMatchCandidate['confidence_label']): string {
+        const s = this.i18n.strings();
+        switch (label) {
+            case 'very_likely':
+                return s.matchVeryLikely;
+            case 'likely':
+                return s.matchLikely;
+            case 'possible':
+                return s.matchPossible;
+            default:
+                return s.matchWeak;
         }
     }
 

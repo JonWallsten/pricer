@@ -275,6 +275,136 @@
             </section>
         }
 
+        <!-- Cross-store matches -->
+        <section class="section">
+            <div class="section-header">
+                <h2>{{ i18n.strings().otherStores }}</h2>
+                <button mat-flat-button (click)="discoverMatches(true)" [disabled]="discoveringMatches()">
+                    @if (discoveringMatches()) {
+                        <mat-spinner diameter="18"></mat-spinner>
+                    } @else {
+                        <mat-icon>travel_explore</mat-icon>
+                    }
+                    {{
+                        matches().length > 0
+                            ? i18n.strings().refreshMatches
+                            : i18n.strings().findMatches
+                    }}
+                </button>
+            </div>
+
+            @if (matchesError()) {
+                <div class="check-error">{{ matchesError() }}</div>
+            }
+
+            @if (matchesLoading()) {
+                <div class="chart-placeholder">
+                    <mat-spinner diameter="24"></mat-spinner>
+                </div>
+            } @else if (matches().length === 0) {
+                <div class="alerts-empty matches-empty">
+                    <mat-icon class="empty-icon">travel_explore</mat-icon>
+                    <p>{{ i18n.strings().noMatches }}</p>
+                    <p>{{ i18n.strings().noMatchesHint }}</p>
+                </div>
+            } @else {
+                <div class="match-list">
+                    @for (match of matches(); track match.id) {
+                        <div class="match-item">
+                            <div class="match-top">
+                                <div class="match-main">
+                                    @if (match.image_url) {
+                                        <img
+                                            [src]="match.image_url"
+                                            class="match-image"
+                                            alt=""
+                                            referrerpolicy="no-referrer"
+                                        />
+                                    }
+                                    <div class="match-info">
+                                        <a
+                                            class="match-domain"
+                                            [href]="match.candidate_url"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            {{ match.candidate_domain }}
+                                            <mat-icon class="site-link-icon">open_in_new</mat-icon>
+                                        </a>
+                                        @if (match.candidate_title) {
+                                            <div class="match-title">{{ match.candidate_title }}</div>
+                                        }
+                                        <div class="match-badges">
+                                            <span
+                                                class="badge"
+                                                [class.badge--success]="
+                                                    match.confidence_label === 'very_likely' ||
+                                                    match.confidence_label === 'likely'
+                                                "
+                                                [class.badge--warning]="
+                                                    match.confidence_label === 'possible'
+                                                "
+                                                [class.badge--muted]="
+                                                    match.confidence_label === 'weak'
+                                                "
+                                            >
+                                                {{ match.confidence_score }}%
+                                                {{ getMatchConfidenceLabel(match.confidence_label) }}
+                                            </span>
+                                            @if (
+                                                match.availability &&
+                                                match.availability !== 'unknown'
+                                            ) {
+                                                <span
+                                                    class="badge"
+                                                    [class.badge--success]="
+                                                        match.availability === 'in_stock'
+                                                    "
+                                                    [class.badge--error]="
+                                                        match.availability === 'out_of_stock'
+                                                    "
+                                                    [class.badge--warning]="
+                                                        match.availability === 'preorder'
+                                                    "
+                                                >
+                                                    {{ getAvailabilityLabel(match.availability) }}
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="match-price-area">
+                                    @if (match.candidate_price !== null) {
+                                        <span class="site-price">{{
+                                            formatPrice(match.candidate_price, match.candidate_currency || undefined)
+                                        }}</span>
+                                    }
+                                </div>
+                            </div>
+                            @if (match.reasons.length > 0) {
+                                <div class="match-reasons">
+                                    <strong>{{ i18n.strings().matchReasons }}:</strong>
+                                    {{ match.reasons.slice(0, 3).join(' · ') }}
+                                </div>
+                            }
+                            <div class="match-meta">
+                                @if (match.query_used) {
+                                    <span>
+                                        {{ i18n.strings().queryUsed }}:
+                                        <code>{{ match.query_used }}</code>
+                                    </span>
+                                }
+                                <span>
+                                    {{ i18n.strings().matchesUpdated }}:
+                                    {{ match.last_searched_at | timeAgo: i18n.strings() }}
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+
         <!-- Price History -->
         <section class="section">
             <div class="section-header">

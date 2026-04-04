@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/price-scraper.php';
+require_once __DIR__ . '/../lib/product-match-discovery.php';
 
 function handleProductRoutes(string $method, string $path, array $authUser): void
 {
@@ -462,6 +463,50 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
         }
 
         sendJson(['history' => $history]);
+        return;
+    }
+
+    // GET /products/:id/matches — persisted cross-store matches
+    if ($method === 'GET' && preg_match('#^/products/(\d+)/matches$#', $path, $m)) {
+        $productId = (int) $m[1];
+
+        $stmt = $db->prepare('SELECT * FROM products WHERE id = :id AND user_id = :uid');
+        $stmt->execute([':id' => $productId, ':uid' => $userId]);
+        $product = $stmt->fetch();
+        if (!$product) {
+            sendJson(['error' => 'Product not found'], 404);
+            return;
+        }
+
+        $matches = listProductMatches($db, $productId, true);
+        sendJson(['matches' => $matches]);
+        return;
+    }
+
+    // POST /products/:id/discover-matches — manual discovery run
+    if ($method === 'POST' && preg_match('#^/products/(\d+)/discover-matches$#', $path, $m)) {
+        $productId = (int) $m[1];
+
+        $stmt = $db->prepare('SELECT * FROM products WHERE id = :id AND user_id = :uid');
+        $stmt->execute([':id' => $productId, ':uid' => $userId]);
+        $product = $stmt->fetch();
+        if (!$product) {
+            sendJson(['error' => 'Product not found'], 404);
+            return;
+        }
+
+        $body = getJsonBody();
+        $force = !empty($body['force']);
+
+        try {
+            $result = discoverProductMatches($db, $product, $force);
+            sendJson($result);
+        } catch (RuntimeException $e) {
+            sendJson(['error' => $e->getMessage()], 503);
+        } catch (Throwable $e) {
+            error_log('Product match discovery failed: ' . $e->getMessage());
+            sendJson(['error' => 'Failed to discover product matches'], 500);
+        }
         return;
     }
 

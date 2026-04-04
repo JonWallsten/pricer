@@ -119,6 +119,22 @@ interface I18nStrings {
     checkAll: string;
     lowestPrice: string;
     site: string;
+
+    // Cross-store matches
+    otherStores: string;
+    findMatches: string;
+    refreshMatches: string;
+    matchesUpdated: string;
+    noMatches: string;
+    noMatchesHint: string;
+    matchConfidence: string;
+    matchVeryLikely: string;
+    matchLikely: string;
+    matchPossible: string;
+    matchWeak: string;
+    matchReasons: string;
+    queryUsed: string;
+    discoveryUnavailable: string;
 }
 
 const en: I18nStrings = {
@@ -228,6 +244,20 @@ const en: I18nStrings = {
     checkAll: 'Check all',
     lowestPrice: 'Lowest price',
     site: 'Site',
+    otherStores: 'Also sold at',
+    findMatches: 'Find matching products',
+    refreshMatches: 'Refresh matches',
+    matchesUpdated: 'Updated',
+    noMatches: 'No matching products found yet',
+    noMatchesHint: 'Run discovery to search for likely matches at other stores.',
+    matchConfidence: 'Match',
+    matchVeryLikely: 'Very likely',
+    matchLikely: 'Likely',
+    matchPossible: 'Possible',
+    matchWeak: 'Weak',
+    matchReasons: 'Why this matched',
+    queryUsed: 'Query',
+    discoveryUnavailable: 'Discovery is unavailable until SerpApi is configured.',
 };
 
 const sv: I18nStrings = {
@@ -337,6 +367,20 @@ const sv: I18nStrings = {
     checkAll: 'Kontrollera alla',
     lowestPrice: 'Lägsta pris',
     site: 'Sida',
+    otherStores: 'Finns även hos',
+    findMatches: 'Hitta matchande produkter',
+    refreshMatches: 'Uppdatera matcher',
+    matchesUpdated: 'Uppdaterad',
+    noMatches: 'Inga matchande produkter hittades ännu',
+    noMatchesHint: 'Kör sökningen för att leta efter troliga matcher hos andra butiker.',
+    matchConfidence: 'Match',
+    matchVeryLikely: 'Mycket trolig',
+    matchLikely: 'Trolig',
+    matchPossible: 'Möjlig',
+    matchWeak: 'Svag',
+    matchReasons: 'Varför den matchar',
+    queryUsed: 'Sökfråga',
+    discoveryUnavailable: 'Matchsökning är inte tillgänglig förrän SerpApi är konfigurerat.',
 };
 
 const translations: Record<Lang, I18nStrings> = { en, sv };

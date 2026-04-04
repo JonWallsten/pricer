@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - **Multi-URL support**: Products can now track multiple retailer URLs. The lowest price across all sites is displayed as the product's current price
+- Cross-store product discovery with SerpApi-backed candidate search, cached candidate fetching, deterministic confidence scoring, and a new "Also sold at" section on the product detail page
+- New product match persistence/cache tables (migration 009) for search responses, fetched candidate pages, and scored match candidates
+- Manual "Find matching products" / "Refresh matches" action on product detail pages
 - New `product_urls` database table (migration 008) for storing per-URL price data
 - "Sites" section on product detail page showing per-site prices, availability, and domain
 - Per-site refresh button and "Check all" button for checking all URLs at once
@@ -29,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Theme toggle button now has a visible background instead of blending into the toolbar
 - Fetching banner on product form now uses Material theme tokens instead of hardcoded colors
 - Added shared app-level styling tokens/utilities for page widths, badge sizing, and common surface semantics to reduce duplicated SCSS across pages
+- Product detail page now surfaces cross-store match confidence, reasons, and discovery freshness directly in the UI
 
 ### Fixed
 

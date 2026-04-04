@@ -259,6 +259,16 @@ Important conventions:
 - If a style pattern appears in more than one page, move it into the shared layer instead of copying it again
 - Do not add new hardcoded page widths or duplicated badge/card primitives without checking the shared token layer first
 
+### Discovery and matching features
+
+When working on product discovery, search, or matching features:
+
+- Favor deterministic heuristics, caching, and explainable scoring over cleverness
+- Treat web search as candidate discovery only, not as product-match confidence
+- Compute confidence locally from structured signals such as GTIN/MPN/model/brand/title similarity/variant attributes/price proximity
+- Keep search usage low: avoid unnecessary re-searches, reuse cache entries, and respect explicit TTLs and run limits
+- Every stored match score should remain debuggable with a visible reasons/breakdown trail
+
 When making styling changes:
 
 1. Check whether the change belongs in `src/styles.scss` or `src/material-theme.scss`
