@@ -66,7 +66,7 @@ foreach ($urlRows as $row) {
 
     echo "  Checking: $productName ({$row['url']})... ";
 
-    $result = extractPrice($row['url'], $row['css_selector']);
+    $result = extractPrice($row['url'], $row['css_selector'], $row['extraction_strategy'] ?? 'auto');
 
     if ($result['price'] !== null) {
         echo "OK → {$result['price']} {$result['currency']} (via {$result['method']})\n";

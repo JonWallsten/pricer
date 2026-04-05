@@ -22,36 +22,50 @@ Built with **Angular 21+** · Standalone components · Signals · PHP API · MyS
 
 ## ✨ Features
 
-|      | Feature                     | Details                                                                                                        |
-| ---- | --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 🔍   | **Smart price extraction**  | Extracts prices from JSON-LD → meta tags → microdata → CSS selector fallback — works on most e-commerce sites  |
-| 🔔   | **Price drop alerts**       | Set target prices per product and receive email notifications when the price drops below your target           |
-| 📉   | **Price history**           | Chart.js line chart with period selector (week, month, 3 months, year, all) — one data point per day           |
-| 🌐   | **Multi-site tracking**     | Track the same product across multiple retailer URLs — lowest price is shown, with per-site details            |
-| 🧭   | **Cross-store discovery**   | Find likely matching product pages at other stores with SerpApi discovery, structured extraction, and explainable confidence scores |
-| ⚡   | **Auto-fetch on URL paste** | Price, image, name, and availability are detected instantly when entering a URL — no save needed first         |
-| 🏷️   | **Discount chips**          | Quick alert creation with 5%, 10%, 25%, 50% discount chips when adding a product                               |
-| 📦   | **Availability tracking**   | Detects in stock / out of stock / pre-order status and notifies when items come back in stock                  |
-| 🖼️   | **Product images**          | Auto-extracted from structured data (JSON-LD, og:image, microdata) and displayed on dashboard and detail pages |
-| ⏱️   | **Hourly price checks**     | Cron job checks all tracked products every hour and sends alerts when targets are hit                          |
-| 🔐   | **Google login**            | OAuth via Google Identity Services with JWT session in HttpOnly cookies                                        |
-| 👤   | **User approval system**    | New users must be approved by admin before accessing the app — the admin account is identified by `ADMIN_GOOGLE_ID` |
-| 🛡️   | **Admin panel**             | In-app user management page to approve or reject users                                                         |
-| 🇸🇪🇬🇧 | **English & Swedish**       | Full i18n with auto-detection from browser language                                                            |
-| 🌓   | **Three-way theme toggle**  | System / dark / light theme, persisted to localStorage                                                         |
-| 📱   | **Mobile-first design**     | Angular Material 3 components, responsive layout                                                               |
+|      | Feature                     | Details                                                                                                                                                               |
+| ---- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🔍   | **Smart price extraction**  | Multi-strategy pipeline: CSS selector → JSON-LD → script patterns → meta tags → microdata → DOM heuristic — with per-URL strategy selection (auto / selector)         |
+| 🔔   | **Price drop alerts**       | Set target prices per product and receive email notifications when the price drops below your target                                                                  |
+| 📉   | **Price history**           | Chart.js line chart with period selector (week, month, 3 months, year, all) — one data point per day                                                                  |
+| 🌐   | **Multi-site tracking**     | Track the same product across multiple retailer URLs — lowest price is shown, with per-site details                                                                   |
+| 🧭   | **Cross-store discovery**   | Find likely matching product pages at other stores with SerpApi discovery, structured extraction, and explainable confidence scores                                   |
+| 🔬   | **Page Inspector**          | Debug why a selector fails — view server-fetched HTML in a sandboxed iframe with JS-rendering detection, page quality warnings, and click-to-pick selector generation |
+| ⚡   | **Auto-fetch on URL paste** | Price, image, name, and availability are detected instantly when entering a URL — no save needed first                                                                |
+| 🏷️   | **Discount chips**          | Quick alert creation with 5%, 10%, 25%, 50% discount chips when adding a product                                                                                      |
+| 📦   | **Availability tracking**   | Detects in stock / out of stock / pre-order status and notifies when items come back in stock                                                                         |
+| 🖼️   | **Product images**          | Auto-extracted from structured data (JSON-LD, og:image, microdata) and displayed on dashboard and detail pages                                                        |
+| ⏱️   | **Hourly price checks**     | Cron job checks all tracked products every hour and sends alerts when targets are hit                                                                                 |
+| 🔐   | **Google login**            | OAuth via Google Identity Services with JWT session in HttpOnly cookies                                                                                               |
+| 👤   | **User approval system**    | New users must be approved by admin before accessing the app — the admin account is identified by `ADMIN_GOOGLE_ID`                                                   |
+| 🛡️   | **Admin panel**             | In-app user management page to approve or reject users                                                                                                                |
+| 🇸🇪🇬🇧 | **English & Swedish**       | Full i18n with auto-detection from browser language                                                                                                                   |
+| 🌓   | **Three-way theme toggle**  | System / dark / light theme, persisted to localStorage                                                                                                                |
+| 📱   | **Mobile-first design**     | Angular Material 3 components, responsive layout                                                                                                                      |
 
 ---
 
 ## 🔍 How price extraction works
 
-The scraper tries four methods in order, stopping at the first successful match:
+The scraper uses a configurable multi-strategy pipeline. Each URL can be set to **Auto** (tries all methods in order) or **CSS Selector** (uses only a specified selector). In auto mode, the pipeline tries these methods in order, stopping at the first successful match:
 
-### 1. JSON-LD (`application/ld+json`)
+### 1. CSS selector (if configured)
+
+If the user specified a CSS selector, try it first. The selector is converted to XPath and matched against the server-fetched HTML.
+
+### 2. JSON-LD (`application/ld+json`)
 
 Parses `<script type="application/ld+json">` blocks for `schema.org/Product` or `schema.org/Offer` with a `price` or `lowPrice` field. Also extracts availability and product image.
 
-### 2. Meta tags
+### 3. Script patterns
+
+Extracts prices from embedded JavaScript data structures:
+
+- **WebComponents.push** — common in Nordic e-commerce (e.g. Elgiganten)
+- **\_\_NEXT_DATA\_\_** — Next.js server-side props
+- **\_\_NUXT\_\_** / **\_\_NUXT_DATA\_\_** — Nuxt.js hydration data
+- **\_\_INITIAL_STATE\_\_** / **\_\_APP_DATA\_\_** — generic SSR state
+
+### 4. Meta tags
 
 Looks for OpenGraph product tags:
 
@@ -61,13 +75,17 @@ Looks for OpenGraph product tags:
 <meta property="og:availability" content="instock">
 ```
 
-### 3. Microdata
+### 5. Microdata
 
 Scans for `itemprop="price"` on elements with a `content` attribute or text content, within a `schema.org/Product` or `/Offer` scope.
 
-### 4. CSS selector fallback
+### 6. DOM heuristic fallback
 
-If automatic methods fail, the user can provide a custom CSS selector pointing to the price element. The selector is auto-formatted on input (e.g. bare `data-price="value"` becomes `[data-price="value"]`).
+Scoring-based price discovery from DOM elements with price-related CSS classes and data attributes. Penalises elements in list/shipping contexts and favours elements with sale or data-price attributes.
+
+### Price candidate discovery
+
+The **Page Inspector** debug panel shows all discovered price candidates from all sources, with confidence levels (high / medium / low) and extraction paths. A "Find by current price" tool lets you enter the visible price to locate its source.
 
 ### Availability detection
 
@@ -167,11 +185,11 @@ Both servers are needed for the full stack locally. The Angular dev server proxi
 
 Three separate credential files keep secrets organised:
 
-| File                     | Contents                                                                      | Committed? | Deployed to server? |
-| ------------------------ | ----------------------------------------------------------------------------- | :--------: | :-----------------: |
+| File                     | Contents                                                                         | Committed? | Deployed to server? |
+| ------------------------ | -------------------------------------------------------------------------------- | :--------: | :-----------------: |
 | `.credentials.env`       | DB host/name/user/pass, Google OAuth client ID, JWT secret, SMTP, admin identity |     No     |         Yes         |
-| `.credentials.local.env` | Local overrides (e.g. different DB host for dev)                              |     No     |         No          |
-| `.ftp.env`               | FTP host/user/pass/path for FTP deployment                                    |     No     |         No          |
+| `.credentials.local.env` | Local overrides (e.g. different DB host for dev)                                 |     No     |         No          |
+| `.ftp.env`               | FTP host/user/pass/path for FTP deployment                                       |     No     |         No          |
 
 Copy the examples and fill in your values:
 

@@ -8,6 +8,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **Product pricing interpretation system**: new layer that identifies the main product on a page, classifies price roles, scores product association, detects campaigns, and selects the primary price
+- **Main product context**: `buildMainProductContext()` aggregates product identity (name, SKU, GTIN, brand) from JSON-LD, meta tags, microdata, DOM signals, and data attributes with confidence scoring
+- **Price role classification**: `classifyPriceRole()` identifies prices as current, regular, campaign, previous_lowest (Omnibus 30-day), unit, from, or member using field names, CSS patterns, and Swedish keywords
+- **Product association scoring**: `scoreProductAssociation()` scores 0–100 how strongly each price candidate belongs to the main product, penalizing recommendation/related-product containers
+- **Campaign detection**: `detectCampaign()` identifies discount campaigns and computes savings using the EU Omnibus Directive 30-day lowest price as reference when available
+- **EU Omnibus 30-day lowest price support**: detects `previousLowestPrice`, `comparisonPrice`, `omnibusPrice`, `jämförpris`, `lägsta-pris` and similar fields from Swedish e-commerce sites; stores as `previous_lowest_price` column; displays struck-through on product detail
+- **Price interpretation pipeline**: auto-mode now collects ALL candidates from all sources, then runs the interpretation layer (context → association → role → campaign → selection) before choosing the primary price
+- **Campaign fields in database**: migration 011 adds `regular_price`, `previous_lowest_price`, `is_campaign`, `campaign_type`, `campaign_label`, `campaign_json` to both `product_urls` and `products` tables
+- **Page inspector enhancements**: product context card, price role badges, association score bars, campaign detection card with struck-through prices and savings display
+- **Product detail campaign display**: hero card shows struck-through reference price (Omnibus 30-day lowest or regular) above campaign price; per-site rows show the same treatment with campaign badges
+- Anti-noise filtering for recommendation/related/upsell containers in WebComponents extraction
+- 26 new i18n keys (en + sv) for price roles, campaign info, product context, and association labels
+
+- **Multi-strategy price extraction**: new pipeline that tries CSS selector → JSON-LD → script patterns → meta tags → microdata → DOM heuristic, configurable per URL as 'auto' or 'selector' mode
+- **Script pattern extractors**: built-in support for `WebComponents.push`, `__NEXT_DATA__`, `__NUXT__`/`__NUXT_DATA__`, and `__INITIAL_STATE__`/`__APP_DATA__` embedded data
+- **DOM heuristic fallback**: scoring-based price discovery from DOM elements with price-related classes and data attributes
+- **Price candidate discovery**: `discoverPriceCandidates()` aggregates price sources from all extraction methods, deduplicates by value, and sorts by confidence
+- **Find by current price**: helper that searches all price sources for a known visible price (within 0.5% tolerance) to identify the extraction path
+- **Extraction strategy selector**: per-URL dropdown on the product form to choose between 'Auto' and 'CSS Selector' extraction modes
+- **Discovered price sources panel**: page inspector side panel now shows all discovered price candidates with source type, confidence badge, and extraction path
+- **Find by price tool**: debug mode in page inspector includes a search input to find which source matches a known price
+- Structured extraction results with `confidence`, `debug_source`, `debug_path`, and `warnings` fields
+- `PriceCandidate` model with sourceType, patternType, confidence, path, and reasons
+- Migration 010: `extraction_strategy` column on `product_urls` and `products` tables
+- 22 new i18n keys (en + sv) for extraction strategy, discovered sources, and confidence labels
+- **Page Inspector**: dialog-based tool for debugging price extraction — opens server-fetched HTML in a sandboxed iframe with JS-rendering detection, page quality warnings, and selector match diagnostics
+- **Selector Picker**: interactive click-to-pick mode generates multiple ranked CSS selector candidates with stability labels (recommended / fallback / fragile)
+- Debug mode on product detail page lets you inspect how the scraper sees each tracked URL and test selectors against actual server-fetched HTML
+- New `POST /products/page-source` API endpoint for fetching and sanitising page HTML with selector analysis
+- New backend functions: `detectJsRendering()`, `detectPageQualityIssues()`, `preparePageForPreview()`, `analyzeSelectorInDoc()`
+- 16 new i18n keys (en + sv) for the page inspector UI
+- API integration tests for the page-source endpoint
 - **Multi-URL support**: Products can now track multiple retailer URLs. The lowest price across all sites is displayed as the product's current price
 - Cross-store product discovery with SerpApi-backed candidate search, cached candidate fetching, deterministic confidence scoring, and a new "Also sold at" section on the product detail page
 - New product match persistence/cache tables (migration 009) for search responses, fetched candidate pages, and scored match candidates

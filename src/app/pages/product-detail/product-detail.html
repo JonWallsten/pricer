@@ -30,7 +30,21 @@
                             {{ i18n.strings().currentPrice }}
                         }
                     </span>
+                    @if (prod.is_campaign) {
+                        @if (prod.previous_lowest_price) {
+                            <span class="hero-price-reference">
+                                {{ formatPrice(prod.previous_lowest_price) }}
+                            </span>
+                        } @else if (prod.regular_price) {
+                            <span class="hero-price-reference">
+                                {{ formatPrice(prod.regular_price) }}
+                            </span>
+                        }
+                    }
                     <span class="hero-price-value">{{ formatPrice(prod.current_price) }}</span>
+                    @if (prod.is_campaign && prod.campaign_label) {
+                        <span class="hero-campaign-badge">{{ prod.campaign_label }}</span>
+                    }
                 </div>
             </div>
 
@@ -136,7 +150,9 @@
                     class="hero-check-btn hero-check-btn--mobile"
                     (click)="checkPrice()"
                     [disabled]="checking()"
-                    [attr.aria-label]="checking() ? i18n.strings().checking : i18n.strings().checkNow"
+                    [attr.aria-label]="
+                        checking() ? i18n.strings().checking : i18n.strings().checkNow
+                    "
                     [title]="checking() ? i18n.strings().checking : i18n.strings().checkNow"
                 >
                     @if (checking()) {
@@ -241,6 +257,20 @@
                                     </div>
                                 </div>
                                 <div class="site-price-area">
+                                    @if (siteUrl.is_campaign) {
+                                        @if (siteUrl.previous_lowest_price !== null) {
+                                            <span class="site-price-reference">{{
+                                                formatPrice(
+                                                    siteUrl.previous_lowest_price,
+                                                    siteUrl.currency
+                                                )
+                                            }}</span>
+                                        } @else if (siteUrl.regular_price !== null) {
+                                            <span class="site-price-reference">{{
+                                                formatPrice(siteUrl.regular_price, siteUrl.currency)
+                                            }}</span>
+                                        }
+                                    }
                                     @if (siteUrl.current_price !== null) {
                                         <span class="site-price">{{
                                             formatPrice(siteUrl.current_price, siteUrl.currency)
@@ -248,7 +278,21 @@
                                     } @else {
                                         <span class="site-price site-price--unknown">—</span>
                                     }
+                                    @if (siteUrl.is_campaign && siteUrl.campaign_label) {
+                                        <span class="site-campaign-badge">{{
+                                            siteUrl.campaign_label
+                                        }}</span>
+                                    }
                                 </div>
+                                <button
+                                    mat-icon-button
+                                    class="site-debug-btn"
+                                    (click)="debugUrl(siteUrl)"
+                                    [attr.aria-label]="i18n.strings().debugExtraction"
+                                    [title]="i18n.strings().debugExtraction"
+                                >
+                                    <mat-icon>bug_report</mat-icon>
+                                </button>
                                 <button
                                     mat-icon-button
                                     class="site-refresh-btn"
@@ -279,7 +323,11 @@
         <section class="section">
             <div class="section-header">
                 <h2>{{ i18n.strings().otherStores }}</h2>
-                <button mat-flat-button (click)="discoverMatches(true)" [disabled]="discoveringMatches()">
+                <button
+                    mat-flat-button
+                    (click)="discoverMatches(true)"
+                    [disabled]="discoveringMatches()"
+                >
                     @if (discoveringMatches()) {
                         <mat-spinner diameter="18"></mat-spinner>
                     } @else {
@@ -332,7 +380,9 @@
                                             <mat-icon class="site-link-icon">open_in_new</mat-icon>
                                         </a>
                                         @if (match.candidate_title) {
-                                            <div class="match-title">{{ match.candidate_title }}</div>
+                                            <div class="match-title">
+                                                {{ match.candidate_title }}
+                                            </div>
                                         }
                                         <div class="match-badges">
                                             <span
@@ -349,7 +399,9 @@
                                                 "
                                             >
                                                 {{ match.confidence_score }}%
-                                                {{ getMatchConfidenceLabel(match.confidence_label) }}
+                                                {{
+                                                    getMatchConfidenceLabel(match.confidence_label)
+                                                }}
                                             </span>
                                             @if (
                                                 match.availability &&
@@ -376,7 +428,10 @@
                                 <div class="match-price-area">
                                     @if (match.candidate_price !== null) {
                                         <span class="site-price">{{
-                                            formatPrice(match.candidate_price, match.candidate_currency || undefined)
+                                            formatPrice(
+                                                match.candidate_price,
+                                                match.candidate_currency || undefined
+                                            )
                                         }}</span>
                                     }
                                 </div>
@@ -431,7 +486,10 @@
                         <mat-button-toggle value="all">{{ i18n.strings().all }}</mat-button-toggle>
                     </mat-button-toggle-group>
                 </div>
-                <mat-form-field appearance="outline" class="period-select period-toggle-wrap--mobile">
+                <mat-form-field
+                    appearance="outline"
+                    class="period-select period-toggle-wrap--mobile"
+                >
                     <mat-label>{{ i18n.strings().priceHistory }}</mat-label>
                     <mat-select
                         [value]="historyPeriod()"
@@ -440,7 +498,9 @@
                     >
                         <mat-option value="week">{{ i18n.strings().week }}</mat-option>
                         <mat-option value="month">{{ i18n.strings().month }}</mat-option>
-                        <mat-option value="three_months">{{ i18n.strings().threeMonths }}</mat-option>
+                        <mat-option value="three_months">{{
+                            i18n.strings().threeMonths
+                        }}</mat-option>
                         <mat-option value="year">{{ i18n.strings().year }}</mat-option>
                         <mat-option value="all">{{ i18n.strings().all }}</mat-option>
                     </mat-select>

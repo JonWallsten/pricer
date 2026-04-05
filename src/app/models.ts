@@ -25,7 +25,13 @@ export interface ProductUrl {
     product_id: number;
     url: string;
     css_selector: string | null;
+    extraction_strategy: ExtractionStrategy;
     current_price: number | null;
+    regular_price: number | null;
+    previous_lowest_price: number | null;
+    is_campaign: boolean;
+    campaign_type: string | null;
+    campaign_label: string | null;
     currency: string;
     image_url: string | null;
     availability: Availability;
@@ -34,6 +40,8 @@ export interface ProductUrl {
     last_check_error: string | null;
     created_at: string;
 }
+
+export type ExtractionStrategy = 'auto' | 'selector';
 
 export interface Product {
     id: number;
@@ -44,6 +52,11 @@ export interface Product {
     image_url: string | null;
     availability: Availability;
     current_price: number | null;
+    regular_price: number | null;
+    previous_lowest_price: number | null;
+    is_campaign: boolean;
+    campaign_type: string | null;
+    campaign_label: string | null;
     currency: string;
     last_checked_at: string | null;
     last_check_status: 'pending' | 'success' | 'error';
@@ -73,6 +86,15 @@ export interface ExtractionResult {
     method: string | null;
     error: string | null;
     image_url: string | null;
+    confidence?: string | null;
+    debug_source?: string | null;
+    debug_path?: string | null;
+    warnings?: string[];
+    regular_price?: number | null;
+    previous_lowest_price?: number | null;
+    is_campaign?: boolean;
+    campaign_type?: string | null;
+    campaign_label?: string | null;
 }
 
 export interface PreviewResult extends ExtractionResult {
@@ -137,4 +159,94 @@ export interface ProductMatchDiscoveryResponse {
     queries: string[];
     searches_run: number;
     matches: ProductMatchCandidate[];
+}
+
+// ─── Page Inspector ──────────────────────────────────────
+
+export interface SelectorMatchPreview {
+    tag: string;
+    textSnippet: string;
+    classSnippet: string;
+    attributeSnippet: string;
+}
+
+export interface PageSourceResponse {
+    html: string;
+    base_url: string;
+    js_rendering_likely: boolean;
+    js_rendering_confidence: 'low' | 'medium' | 'high';
+    js_hints: string[];
+    page_quality_warnings: string[];
+    selector_valid: boolean;
+    selector_error: string | null;
+    selector_match_count: number;
+    selector_matches: SelectorMatchPreview[];
+    price_candidates: PriceCandidate[];
+    price_matches: PriceCandidate[];
+    product_context?: MainProductContext;
+    campaign?: CampaignInfo | null;
+}
+
+export type PriceCandidateConfidence = 'high' | 'medium' | 'low';
+
+export type PriceRole =
+    | 'current'
+    | 'regular'
+    | 'campaign'
+    | 'previous_lowest'
+    | 'unit'
+    | 'from'
+    | 'member'
+    | 'unknown';
+
+export interface PriceCandidate {
+    sourceType: 'dom' | 'jsonld' | 'script_pattern' | 'meta' | 'microdata' | 'css_selector';
+    patternType?: string | null;
+    label: string;
+    valueRaw: unknown;
+    valueFormatted?: string;
+    numericValue: number;
+    currency?: string | null;
+    path?: string;
+    confidence: PriceCandidateConfidence;
+    reasons: string[];
+    priceRole?: PriceRole;
+    productAssociationScore?: number;
+    productAssociationReasons?: string[];
+}
+
+export interface CampaignInfo {
+    type: string;
+    label: string | null;
+    regular_price: number | null;
+    previous_lowest_price: number | null;
+    campaign_price: number;
+    savings: number | null;
+    savings_pct: number | null;
+}
+
+export interface MainProductContext {
+    title: string | null;
+    sku: string | null;
+    gtin: string | null;
+    brand: string | null;
+    image: string | null;
+    url: string;
+    identifiers: string[];
+    confidence: number;
+    reasons: string[];
+}
+
+export interface PageInspectorData {
+    interactionMode: 'pick' | 'debug';
+    url: string;
+    cssSelector?: string;
+}
+
+export interface SelectorCandidate {
+    selector: string;
+    matchCount: number;
+    stabilityLabel: 'recommended' | 'fallback' | 'fragile';
+    stabilityScore: number;
+    stabilityReasons: string[];
 }

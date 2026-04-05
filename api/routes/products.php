@@ -46,8 +46,78 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
             return;
         }
 
-        $result = extractPreview($url, $cssSelector ?: null);
+        $extractionStrategy = isset($body['extraction_strategy']) ? trim($body['extraction_strategy']) : 'auto';
+        if (!in_array($extractionStrategy, ['auto', 'selector'], true)) {
+            $extractionStrategy = 'auto';
+        }
+        $result = extractPreview($url, $cssSelector ?: null, $extractionStrategy);
         sendJson(['preview' => $result]);
+        return;
+    }
+
+    // POST /products/page-source — fetch page for inspector (picker/debug)
+    if ($method === 'POST' && $path === '/products/page-source') {
+        $body = getJsonBody();
+        $url = trim($body['url'] ?? '');
+        $cssSelector = isset($body['css_selector']) ? trim($body['css_selector']) : null;
+        $findPrice = isset($body['find_price']) ? (float) $body['find_price'] : null;
+
+        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+            sendJson(['error' => 'A valid URL is required'], 400);
+            return;
+        }
+        if (!isAllowedFetchUrl($url)) {
+            sendJson(['error' => 'URL must use http/https and resolve to a public host'], 400);
+            return;
+        }
+
+        $html = fetchPage($url);
+        if ($html === null) {
+            sendJson(['error' => 'Failed to fetch page'], 502);
+            return;
+        }
+
+        $preview = preparePageForPreview($html, $url);
+
+        // Analyze selector if provided (on original unsanitized HTML)
+        $selectorResult = [
+            'selector_valid'       => true,
+            'selector_error'       => null,
+            'selector_match_count' => 0,
+            'selector_matches'     => [],
+        ];
+        if ($cssSelector !== null && $cssSelector !== '') {
+            $origDoc = new DOMDocument();
+            $ie = libxml_use_internal_errors(true);
+            $origDoc->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);
+            libxml_use_internal_errors($ie);
+            $selectorResult = analyzeSelectorInDoc($origDoc, $cssSelector);
+        }
+
+        // Discover price candidates from all sources (on original HTML)
+        $origDoc2 = new DOMDocument();
+        $ie2 = libxml_use_internal_errors(true);
+        $origDoc2->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);
+        libxml_use_internal_errors($ie2);
+
+        $priceCandidates = discoverPriceCandidates($origDoc2, $html, $cssSelector, $url);
+
+        // "Find by current price" helper
+        $priceMatches = [];
+        if ($findPrice !== null && $findPrice > 0) {
+            $priceMatches = findPriceInSources($origDoc2, $html, $findPrice, $cssSelector);
+        }
+
+        // Build product context and detect campaigns for debug
+        $productContext = buildMainProductContext($origDoc2, $html, $url);
+        $campaign = !empty($priceCandidates) ? detectCampaign($priceCandidates, $productContext) : null;
+
+        sendJson(array_merge($preview, $selectorResult, [
+            'price_candidates' => $priceCandidates,
+            'price_matches'    => $priceMatches,
+            'product_context'  => $productContext,
+            'campaign'         => $campaign,
+        ]));
         return;
     }
 
@@ -75,7 +145,9 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
                     sendJson(['error' => "URL must use http/https and resolve to a public host: $urlStr"], 400);
                     return;
                 }
-                $urls[] = ['url' => $urlStr, 'css_selector' => $css ?: null];
+                $es = isset($u['extraction_strategy']) ? trim($u['extraction_strategy']) : 'auto';
+                if (!in_array($es, ['auto', 'selector'], true)) $es = 'auto';
+                $urls[] = ['url' => $urlStr, 'css_selector' => $css ?: null, 'extraction_strategy' => $es];
             }
         } else {
             // Backward compat: single url field
@@ -89,7 +161,9 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
                 sendJson(['error' => 'URL must use http/https and resolve to a public host'], 400);
                 return;
             }
-            $urls[] = ['url' => $url, 'css_selector' => $cssSelector ?: null];
+            $es = isset($body['extraction_strategy']) ? trim($body['extraction_strategy']) : 'auto';
+            if (!in_array($es, ['auto', 'selector'], true)) $es = 'auto';
+            $urls[] = ['url' => $url, 'css_selector' => $cssSelector ?: null, 'extraction_strategy' => $es];
         }
 
         if (empty($urls)) {
@@ -112,18 +186,19 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
 
         // Insert all URLs into product_urls and auto-check each
         $insertUrl = $db->prepare(
-            'INSERT INTO product_urls (product_id, url, css_selector)
-             VALUES (:pid, :url, :css)'
+            'INSERT INTO product_urls (product_id, url, css_selector, extraction_strategy)
+             VALUES (:pid, :url, :css, :es)'
         );
         foreach ($urls as $u) {
             $insertUrl->execute([
                 ':pid' => $productId,
                 ':url' => $u['url'],
                 ':css' => $u['css_selector'],
+                ':es'  => $u['extraction_strategy'] ?? 'auto',
             ]);
             $urlId = (int) $db->lastInsertId();
 
-            $result = extractPrice($u['url'], $u['css_selector']);
+            $result = extractPrice($u['url'], $u['css_selector'], $u['extraction_strategy'] ?? 'auto');
             updateProductUrlFromResult($db, $urlId, $result);
         }
 
@@ -226,28 +301,33 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
                     $urlStr = trim($u['url']);
                     $css = isset($u['css_selector']) ? trim($u['css_selector']) : null;
 
+                    $es = isset($u['extraction_strategy']) ? trim($u['extraction_strategy']) : 'auto';
+                    if (!in_array($es, ['auto', 'selector'], true)) $es = 'auto';
+
                     if (isset($u['id']) && $u['id'] !== null) {
                         // Update existing
                         $uid = (int) $u['id'];
                         $incomingIds[] = $uid;
                         $updateStmt = $db->prepare(
-                            'UPDATE product_urls SET url = :url, css_selector = :css WHERE id = :id AND product_id = :pid'
+                            'UPDATE product_urls SET url = :url, css_selector = :css, extraction_strategy = :es WHERE id = :id AND product_id = :pid'
                         );
                         $updateStmt->execute([
                             ':url' => $urlStr,
                             ':css' => $css ?: null,
+                            ':es'  => $es,
                             ':id'  => $uid,
                             ':pid' => $productId,
                         ]);
                     } else {
                         // Insert new
                         $insertStmt = $db->prepare(
-                            'INSERT INTO product_urls (product_id, url, css_selector) VALUES (:pid, :url, :css)'
+                            'INSERT INTO product_urls (product_id, url, css_selector, extraction_strategy) VALUES (:pid, :url, :css, :es)'
                         );
                         $insertStmt->execute([
                             ':pid' => $productId,
                             ':url' => $urlStr,
                             ':css' => $css ?: null,
+                            ':es'  => $es,
                         ]);
                         $incomingIds[] = (int) $db->lastInsertId();
                     }
@@ -338,7 +418,7 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
 
         $results = [];
         foreach ($productUrls as $pu) {
-            $result = extractPrice($pu['url'], $pu['css_selector']);
+            $result = extractPrice($pu['url'], $pu['css_selector'], $pu['extraction_strategy'] ?? 'auto');
             updateProductUrlFromResult($db, (int) $pu['id'], $result);
             $results[] = [
                 'url_id' => (int) $pu['id'],
@@ -398,7 +478,7 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
             return;
         }
 
-        $result = extractPrice($pu['url'], $pu['css_selector']);
+        $result = extractPrice($pu['url'], $pu['css_selector'], $pu['extraction_strategy'] ?? 'auto');
         updateProductUrlFromResult($db, $urlId, $result);
 
         // Re-sync product best price
@@ -567,16 +647,28 @@ function updateProductUrlFromResult(PDO $db, int $urlId, array $result): void
             'UPDATE product_urls
              SET current_price = :price, currency = :currency,
                  image_url = :image_url, availability = :avail,
+                 regular_price = :regular_price,
+                 previous_lowest_price = :previous_lowest_price,
+                 is_campaign = :is_campaign,
+                 campaign_type = :campaign_type,
+                 campaign_label = :campaign_label,
+                 campaign_json = :campaign_json,
                  last_checked_at = NOW(), last_check_status = :status, last_check_error = NULL
              WHERE id = :id'
         );
         $stmt->execute([
-            ':price'    => $result['price'],
-            ':currency' => $result['currency'] ?? 'SEK',
-            ':image_url' => $result['image_url'],
-            ':avail'    => $result['availability'],
-            ':status'   => 'success',
-            ':id'       => $urlId,
+            ':price'                 => $result['price'],
+            ':currency'              => $result['currency'] ?? 'SEK',
+            ':image_url'             => $result['image_url'],
+            ':avail'                 => $result['availability'],
+            ':regular_price'         => $result['regular_price'] ?? null,
+            ':previous_lowest_price' => $result['previous_lowest_price'] ?? null,
+            ':is_campaign'           => ($result['is_campaign'] ?? false) ? 1 : 0,
+            ':campaign_type'         => $result['campaign_type'] ?? null,
+            ':campaign_label'        => $result['campaign_label'] ?? null,
+            ':campaign_json'         => $result['campaign_json'] ?? null,
+            ':status'                => 'success',
+            ':id'                    => $urlId,
         ]);
     } else {
         $stmt = $db->prepare(
@@ -614,18 +706,30 @@ function syncProductBestPrice(PDO $db, int $productId): void
              SET current_price = :price, currency = :currency,
                  url = :url, css_selector = :css,
                  image_url = :image_url, availability = :avail,
+                 regular_price = :regular_price,
+                 previous_lowest_price = :previous_lowest_price,
+                 is_campaign = :is_campaign,
+                 campaign_type = :campaign_type,
+                 campaign_label = :campaign_label,
+                 campaign_json = :campaign_json,
                  last_checked_at = NOW(), last_check_status = :status, last_check_error = NULL
              WHERE id = :id'
         );
         $update->execute([
-            ':price'    => $best['current_price'],
-            ':currency' => $best['currency'],
-            ':url'      => $best['url'],
-            ':css'      => $best['css_selector'],
-            ':image_url' => $best['image_url'],
-            ':avail'    => bestAvailability($db, $productId),
-            ':status'   => 'success',
-            ':id'       => $productId,
+            ':price'                 => $best['current_price'],
+            ':currency'              => $best['currency'],
+            ':url'                   => $best['url'],
+            ':css'                   => $best['css_selector'],
+            ':image_url'             => $best['image_url'],
+            ':avail'                 => bestAvailability($db, $productId),
+            ':regular_price'         => $best['regular_price'] ?? null,
+            ':previous_lowest_price' => $best['previous_lowest_price'] ?? null,
+            ':is_campaign'           => ($best['is_campaign'] ?? 0) ? 1 : 0,
+            ':campaign_type'         => $best['campaign_type'] ?? null,
+            ':campaign_label'        => $best['campaign_label'] ?? null,
+            ':campaign_json'         => $best['campaign_json'] ?? null,
+            ':status'                => 'success',
+            ':id'                    => $productId,
         ]);
     } else {
         // No successful URL — check if any URLs exist with errors

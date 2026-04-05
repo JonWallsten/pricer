@@ -18,9 +18,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSelectModule } from '@angular/material/select';
+import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '../../api.service';
 import { I18nService } from '../../i18n.service';
-import { PreviewResult } from '../../models';
+import { PreviewResult, PageInspectorData, ExtractionStrategy } from '../../models';
 
 @Component({
     selector: 'app-product-form',
@@ -37,12 +39,14 @@ import { PreviewResult } from '../../models';
         MatProgressSpinnerModule,
         MatChipsModule,
         MatCheckboxModule,
+        MatSelectModule,
     ],
 })
 export class ProductForm implements OnInit, OnDestroy {
     private readonly api = inject(ApiService);
     private readonly router = inject(Router);
     private readonly fb = inject(FormBuilder);
+    private readonly dialog = inject(MatDialog);
     protected readonly i18n = inject(I18nService);
 
     /** Route param — set via withComponentInputBinding */
@@ -104,7 +108,7 @@ export class ProductForm implements OnInit, OnDestroy {
                 // Populate URL rows from existing product_urls
                 for (const u of urls) {
                     const idx = this.urlsArray.length;
-                    this.addUrlRow(u.url, u.css_selector ?? '');
+                    this.addUrlRow(u.url, u.css_selector ?? '', u.extraction_strategy ?? 'auto');
                     this.existingUrlIds.set(idx, u.id);
                 }
             } catch {
@@ -125,10 +129,11 @@ export class ProductForm implements OnInit, OnDestroy {
         }
     }
 
-    addUrlRow(url = '', cssSelector = '') {
+    addUrlRow(url = '', cssSelector = '', extractionStrategy: ExtractionStrategy = 'auto') {
         const group = this.fb.nonNullable.group({
             url: [url, [Validators.required, Validators.pattern(/^https?:\/\/.+/)]],
             css_selector: [cssSelector],
+            extraction_strategy: [extractionStrategy],
         });
 
         this.urlsArray.push(group);
@@ -191,6 +196,8 @@ export class ProductForm implements OnInit, OnDestroy {
         if (!group) return;
         const url = group.controls['url'].value;
         const cssSelector = group.controls['css_selector'].value || null;
+        const extractionStrategy =
+            (group.controls['extraction_strategy'].value as string) || 'auto';
         if (!url) return;
 
         this.fetchingIndexes.update((s) => new Set(s).add(index));
@@ -201,7 +208,7 @@ export class ProductForm implements OnInit, OnDestroy {
         });
 
         try {
-            const result = await this.api.previewUrl(url, cssSelector);
+            const result = await this.api.previewUrl(url, cssSelector, extractionStrategy);
             this.previews.update((m) => new Map(m).set(index, result));
 
             // Auto-fill name from first URL's page title if name is empty
@@ -252,9 +259,15 @@ export class ProductForm implements OnInit, OnDestroy {
 
         const val = this.form.getRawValue();
         const urls = val.urls.map((u, i) => {
-            const entry: { id?: number; url: string; css_selector: string | null } = {
+            const entry: {
+                id?: number;
+                url: string;
+                css_selector: string | null;
+                extraction_strategy: string;
+            } = {
                 url: u['url'] as string,
                 css_selector: (u['css_selector'] as string) || null,
+                extraction_strategy: (u['extraction_strategy'] as string) || 'auto',
             };
             const existingId = this.existingUrlIds.get(i);
             if (existingId) entry.id = existingId;
@@ -298,5 +311,36 @@ export class ProductForm implements OnInit, OnDestroy {
         } else {
             this.router.navigate(['/']);
         }
+    }
+
+    async openSelectorPicker(index: number) {
+        const group = this.urlsArray.at(index);
+        if (!group) return;
+        const url = group.controls['url'].value;
+        if (!url) return;
+
+        const { PageInspectorDialog } =
+            await import('../../components/page-inspector-dialog/page-inspector-dialog');
+
+        const data: PageInspectorData = {
+            interactionMode: 'pick',
+            url,
+            cssSelector: group.controls['css_selector'].value || undefined,
+        };
+
+        const ref = this.dialog.open(PageInspectorDialog, {
+            data,
+            width: '95vw',
+            maxWidth: '1400px',
+            height: '85vh',
+            panelClass: 'page-inspector-panel',
+        });
+
+        ref.afterClosed().subscribe((selector: string | null) => {
+            if (selector) {
+                group.controls['css_selector'].setValue(selector);
+                this.fetchPreview(index);
+            }
+        });
     }
 }

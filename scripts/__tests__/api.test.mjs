@@ -346,6 +346,101 @@ describe('Alerts', () => {
     });
 });
 
+// ── Page source / inspector ────────────────────────────────
+
+describe('POST /products/page-source', () => {
+    // Note: tests that fetch external URLs may get 502 if the server
+    // cannot reach the internet.  We accept both 200 (success) and 502
+    // (fetch failed) for those cases and only assert the full response
+    // shape when the fetch succeeds.
+
+    it('returns sanitised HTML for a valid URL (or 502 when offline)', async () => {
+        const { status, data } = await api('POST', '/products/page-source', {
+            token: jwt,
+            body: { url: 'https://www.example.com' },
+        });
+        expect([200, 502]).toContain(status);
+        if (status === 200) {
+            expect(data.html).toBeDefined();
+            expect(data.base_url).toBeDefined();
+            expect(typeof data.js_rendering_likely).toBe('boolean');
+            expect(Array.isArray(data.page_quality_warnings)).toBe(true);
+            // Sanitised HTML must not contain <script> tags
+            expect(data.html).not.toMatch(/<script[\s>]/i);
+        }
+    });
+
+    it('returns selector analysis when css_selector is provided (or 502 when offline)', async () => {
+        const { status, data } = await api('POST', '/products/page-source', {
+            token: jwt,
+            body: { url: 'https://www.example.com', css_selector: 'h1' },
+        });
+        expect([200, 502]).toContain(status);
+        if (status === 200) {
+            expect(typeof data.selector_valid).toBe('boolean');
+            expect(typeof data.selector_match_count).toBe('number');
+        }
+    });
+
+    it('reports invalid selector gracefully (or 502 when offline)', async () => {
+        const { status, data } = await api('POST', '/products/page-source', {
+            token: jwt,
+            body: { url: 'https://www.example.com', css_selector: '[[[invalid' },
+        });
+        expect([200, 502]).toContain(status);
+        if (status === 200) {
+            expect(data.selector_valid).toBe(false);
+            expect(data.selector_error).toBeDefined();
+        }
+    });
+
+    it('returns price_candidates and price_matches arrays (or 502 when offline)', async () => {
+        const { status, data } = await api('POST', '/products/page-source', {
+            token: jwt,
+            body: { url: 'https://www.example.com' },
+        });
+        expect([200, 502]).toContain(status);
+        if (status === 200) {
+            expect(Array.isArray(data.price_candidates)).toBe(true);
+            expect(Array.isArray(data.price_matches)).toBe(true);
+        }
+    });
+
+    it('returns price_matches when find_price is provided (or 502 when offline)', async () => {
+        const { status, data } = await api('POST', '/products/page-source', {
+            token: jwt,
+            body: { url: 'https://www.example.com', find_price: 99.99 },
+        });
+        expect([200, 502]).toContain(status);
+        if (status === 200) {
+            expect(Array.isArray(data.price_matches)).toBe(true);
+        }
+    });
+
+    it('rejects missing URL with 400', async () => {
+        const { status } = await api('POST', '/products/page-source', {
+            token: jwt,
+            body: {},
+        });
+        expect(status).toBe(400);
+    });
+
+    it('rejects disallowed URL with 400', async () => {
+        const { status } = await api('POST', '/products/page-source', {
+            token: jwt,
+            body: { url: 'ftp://badscheme.example.com' },
+        });
+        expect(status).toBe(400);
+    });
+
+    it('requires authentication', async () => {
+        const { status } = await api('POST', '/products/page-source', {
+            body: { url: 'https://www.example.com' },
+        });
+        expect(status).toBe(401);
+    });
+});
+
 // ── Approval guard ─────────────────────────────────────────
 
 describe('Unapproved user is blocked', () => {

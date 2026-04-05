@@ -13,6 +13,7 @@ import {
 import { Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -30,6 +31,7 @@ import {
     ExtractionResult,
     PriceHistoryEntry,
     ProductMatchCandidate,
+    PageInspectorData,
 } from '../../models';
 import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
 import { Chart, registerables } from 'chart.js';
@@ -59,6 +61,7 @@ export class ProductDetail implements OnInit, OnDestroy {
     private readonly api = inject(ApiService);
     private readonly router = inject(Router);
     private readonly fb = inject(FormBuilder);
+    private readonly dialog = inject(MatDialog);
     protected readonly i18n = inject(I18nService);
 
     readonly id = input.required<string>();
@@ -418,6 +421,22 @@ export class ProductDetail implements OnInit, OnDestroy {
             default:
                 return s.matchWeak;
         }
+    }
+
+    async debugUrl(url: ProductUrl) {
+        const { PageInspectorDialog } =
+            await import('../../components/page-inspector-dialog/page-inspector-dialog');
+        this.dialog.open(PageInspectorDialog, {
+            width: '95vw',
+            maxWidth: '1400px',
+            height: '85vh',
+            panelClass: 'page-inspector-panel',
+            data: {
+                interactionMode: 'debug',
+                url: url.url,
+                cssSelector: url.css_selector ?? undefined,
+            } satisfies PageInspectorData,
+        });
     }
 
     goBack() {

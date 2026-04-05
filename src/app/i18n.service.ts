@@ -135,6 +135,70 @@ interface I18nStrings {
     matchReasons: string;
     queryUsed: string;
     discoveryUnavailable: string;
+
+    // Page inspector
+    pickSelector: string;
+    pickSelectorHint: string;
+    useThisSelector: string;
+    copySelector: string;
+    testSelector: string;
+    debugExtraction: string;
+    jsRenderingWarning: string;
+    pageQualityWarning: string;
+    selectorMatches: string;
+    noSelectorMatch: string;
+    invalidSelector: string;
+    selectorRecommended: string;
+    selectorFallback: string;
+    selectorFragile: string;
+    renderedPickerUnavailable: string;
+    sourceView: string;
+
+    // Extraction strategy
+    extractionStrategy: string;
+    extractionStrategyAuto: string;
+    extractionStrategySelector: string;
+    extractionStrategyHint: string;
+
+    // Price source discovery
+    discoveredSources: string;
+    noSourcesFound: string;
+    findByPrice: string;
+    findByPriceHint: string;
+    searchPrice: string;
+    confidenceHigh: string;
+    confidenceMedium: string;
+    confidenceLow: string;
+    priceSource: string;
+    sourceJsonLd: string;
+    sourceScript: string;
+    sourceDom: string;
+    sourceMeta: string;
+    sourceMicrodata: string;
+    sourceCssSelector: string;
+
+    // Price roles & campaign
+    priceRoleCurrent: string;
+    priceRoleRegular: string;
+    priceRoleCampaign: string;
+    priceRolePreviousLowest: string;
+    priceRoleUnit: string;
+    priceRoleFrom: string;
+    priceRoleMember: string;
+    priceRoleUnknown: string;
+    regularPrice: string;
+    previousLowestPrice: string;
+    campaignPrice: string;
+    savings: string;
+    campaignDetected: string;
+    noCampaign: string;
+    mainProductContext: string;
+    productAssociation: string;
+    priceDecision: string;
+    identifiers: string;
+    confidence: string;
+    associationScore: string;
+    priceRole: string;
 }
 
 const en: I18nStrings = {
@@ -258,6 +322,71 @@ const en: I18nStrings = {
     matchReasons: 'Why this matched',
     queryUsed: 'Query',
     discoveryUnavailable: 'Discovery is unavailable until SerpApi is configured.',
+
+    // Page inspector
+    pickSelector: 'Pick selector',
+    pickSelectorHint: 'Click on the price element in the page preview',
+    useThisSelector: 'Use this selector',
+    copySelector: 'Copy',
+    testSelector: 'Test',
+    debugExtraction: 'Debug',
+    jsRenderingWarning:
+        'This page appears to render content with JavaScript. The scraper reads server HTML, so selectors for runtime-only elements may not work.',
+    pageQualityWarning:
+        'The fetched page may be degraded (anti-bot challenge, login wall, or very low content).',
+    selectorMatches: '{count} element(s) match',
+    noSelectorMatch: 'No elements match this selector',
+    invalidSelector: 'Invalid selector',
+    selectorRecommended: 'Recommended',
+    selectorFallback: 'Fallback',
+    selectorFragile: 'Fragile',
+    renderedPickerUnavailable:
+        'Live page picker is not yet available. Selectors are tested against server-fetched HTML.',
+    sourceView: 'Source view',
+
+    extractionStrategy: 'Extraction mode',
+    extractionStrategyAuto: 'Auto',
+    extractionStrategySelector: 'CSS Selector',
+    extractionStrategyHint:
+        'Auto tries all methods. CSS Selector uses only the specified selector.',
+
+    discoveredSources: 'Discovered price sources',
+    noSourcesFound: 'No price sources discovered',
+    findByPrice: 'Find by current price',
+    findByPriceHint: 'Enter the visible price to find its source',
+    searchPrice: 'Search',
+    confidenceHigh: 'High',
+    confidenceMedium: 'Medium',
+    confidenceLow: 'Low',
+    priceSource: 'Source',
+    sourceJsonLd: 'JSON-LD',
+    sourceScript: 'Script data',
+    sourceDom: 'DOM element',
+    sourceMeta: 'Meta tag',
+    sourceMicrodata: 'Microdata',
+    sourceCssSelector: 'CSS Selector',
+
+    priceRoleCurrent: 'Current',
+    priceRoleRegular: 'Regular',
+    priceRoleCampaign: 'Campaign',
+    priceRolePreviousLowest: '30-day lowest',
+    priceRoleUnit: 'Unit price',
+    priceRoleFrom: 'From',
+    priceRoleMember: 'Member',
+    priceRoleUnknown: 'Unknown',
+    regularPrice: 'Regular price',
+    previousLowestPrice: 'Lowest price (30 days)',
+    campaignPrice: 'Campaign price',
+    savings: 'Savings',
+    campaignDetected: 'Campaign detected',
+    noCampaign: 'No campaign',
+    mainProductContext: 'Product identity',
+    productAssociation: 'Association',
+    priceDecision: 'Price decision',
+    identifiers: 'Identifiers',
+    confidence: 'Confidence',
+    associationScore: 'Association',
+    priceRole: 'Role',
 };
 
 const sv: I18nStrings = {
@@ -381,6 +510,71 @@ const sv: I18nStrings = {
     matchReasons: 'Varför den matchar',
     queryUsed: 'Sökfråga',
     discoveryUnavailable: 'Matchsökning är inte tillgänglig förrän SerpApi är konfigurerat.',
+
+    // Page inspector
+    pickSelector: 'Välj selektor',
+    pickSelectorHint: 'Klicka på priselementet i sidförhandsgranskningen',
+    useThisSelector: 'Använd denna selektor',
+    copySelector: 'Kopiera',
+    testSelector: 'Testa',
+    debugExtraction: 'Felsök',
+    jsRenderingWarning:
+        'Denna sida verkar rendera innehåll med JavaScript. Skraparen läser server-HTML, så selektorer för element som bara finns vid körning kanske inte fungerar.',
+    pageQualityWarning:
+        'Den hämtade sidan kan vara bristfällig (anti-bot-utmaning, inloggningsvägg eller mycket lite innehåll).',
+    selectorMatches: '{count} element matchar',
+    noSelectorMatch: 'Inga element matchar denna selektor',
+    invalidSelector: 'Ogiltig selektor',
+    selectorRecommended: 'Rekommenderad',
+    selectorFallback: 'Reserv',
+    selectorFragile: 'Ömtålig',
+    renderedPickerUnavailable:
+        'Live-sidväljare är inte tillgänglig ännu. Selektorer testas mot serverhämtad HTML.',
+    sourceView: 'Källvy',
+
+    extractionStrategy: 'Extraheringsläge',
+    extractionStrategyAuto: 'Automatisk',
+    extractionStrategySelector: 'CSS-selektor',
+    extractionStrategyHint:
+        'Automatisk testar alla metoder. CSS-selektor använder bara angiven selektor.',
+
+    discoveredSources: 'Upptäckta priskällor',
+    noSourcesFound: 'Inga priskällor hittades',
+    findByPrice: 'Hitta efter pris',
+    findByPriceHint: 'Ange det synliga priset för att hitta dess källa',
+    searchPrice: 'Sök',
+    confidenceHigh: 'Hög',
+    confidenceMedium: 'Medel',
+    confidenceLow: 'Låg',
+    priceSource: 'Källa',
+    sourceJsonLd: 'JSON-LD',
+    sourceScript: 'Skriptdata',
+    sourceDom: 'DOM-element',
+    sourceMeta: 'Meta-tagg',
+    sourceMicrodata: 'Mikrodata',
+    sourceCssSelector: 'CSS-selektor',
+
+    priceRoleCurrent: 'Nuvarande',
+    priceRoleRegular: 'Ordinarie',
+    priceRoleCampaign: 'Kampanj',
+    priceRolePreviousLowest: 'Lägsta 30 dagar',
+    priceRoleUnit: 'Styckpris',
+    priceRoleFrom: 'Från',
+    priceRoleMember: 'Medlem',
+    priceRoleUnknown: 'Okänd',
+    regularPrice: 'Ordinarie pris',
+    previousLowestPrice: 'Lägsta pris (30 dagar)',
+    campaignPrice: 'Kampanjpris',
+    savings: 'Besparing',
+    campaignDetected: 'Kampanj upptäckt',
+    noCampaign: 'Ingen kampanj',
+    mainProductContext: 'Produktidentitet',
+    productAssociation: 'Koppling',
+    priceDecision: 'Prisval',
+    identifiers: 'Identifierare',
+    confidence: 'Konfidens',
+    associationScore: 'Koppling',
+    priceRole: 'Roll',
 };
 
 const translations: Record<Lang, I18nStrings> = { en, sv };

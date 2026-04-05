@@ -9,6 +9,7 @@ import {
     AdminUser,
     ProductMatchCandidate,
     ProductMatchDiscoveryResponse,
+    PageSourceResponse,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -77,9 +78,7 @@ export class ApiService {
         if (!res.ok) throw new Error('Failed to delete product');
     }
 
-    async checkPrice(
-        id: number,
-    ): Promise<{
+    async checkPrice(id: number): Promise<{
         product: Product;
         extraction: ExtractionResult;
         url_results: { url_id: number; url: string; extraction: ExtractionResult }[];
@@ -106,16 +105,46 @@ export class ApiService {
         return await res.json();
     }
 
-    async previewUrl(url: string, cssSelector?: string | null): Promise<PreviewResult> {
+    async previewUrl(
+        url: string,
+        cssSelector?: string | null,
+        extractionStrategy?: string | null,
+    ): Promise<PreviewResult> {
         const res = await fetch('api/products/preview', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url, css_selector: cssSelector || null }),
+            body: JSON.stringify({
+                url,
+                css_selector: cssSelector || null,
+                extraction_strategy: extractionStrategy || 'auto',
+            }),
         });
         if (!res.ok) throw new Error('Failed to preview URL');
         const data = await res.json();
         return data.preview;
+    }
+
+    async fetchPageSource(
+        url: string,
+        cssSelector?: string | null,
+        findPrice?: number | null,
+    ): Promise<PageSourceResponse> {
+        const body: Record<string, unknown> = { url, css_selector: cssSelector || null };
+        if (findPrice != null && findPrice > 0) {
+            body['find_price'] = findPrice;
+        }
+        const res = await fetch('api/products/page-source', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to fetch page source');
+        }
+        return await res.json();
     }
 
     async getProductHistory(id: number, period: string): Promise<PriceHistoryEntry[]> {

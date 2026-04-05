@@ -7,3 +7,5 @@
 - [x] Pricer title needs home link to get out of admin mode.
 - [x] dark/light mode button is missing some kind of background
 - [x] The UI needs an overhaul. It looks old unpolished. Dark blue primary color could be some other color to work better with dark mode.
+      Learn existing auto matching patterns from sites wher patterns are found. rank by number of hits etc,
+      Verify price before pressing OK when choosing automatic or edit to manual later? Maybe when clcking OK, but then stay in the form saying user can try manual? No need to add page if auto fail?
