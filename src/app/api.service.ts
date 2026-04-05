@@ -189,6 +189,32 @@ export class ApiService {
         return await res.json();
     }
 
+    async addProductUrl(productId: number, url: string): Promise<ProductUrl> {
+        const res = await fetch(`api/products/${productId}/add-url`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to add URL');
+        }
+        const data = await res.json();
+        return data.url;
+    }
+
+    async deleteProductUrl(productId: number, urlId: number): Promise<void> {
+        const res = await fetch(`api/products/${productId}/urls/${urlId}`, {
+            method: 'DELETE',
+            credentials: 'include',
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to remove URL');
+        }
+    }
+
     // ─── Alerts ───────────────────────────────────────────
 
     async createAlert(

@@ -135,6 +135,8 @@ interface I18nStrings {
     matchReasons: string;
     queryUsed: string;
     discoveryUnavailable: string;
+    trackMatch: string;
+    cannotRemoveLastUrl: string;
 
     // Page inspector
     pickSelector: string;
@@ -298,7 +300,7 @@ const en: I18nStrings = {
     outOfStock: 'Out of stock',
     preorder: 'Pre-order',
     availabilityUnknown: 'Unknown',
-    notifyBackInStock: 'Notify when back in stock',
+    notifyBackInStock: 'Only notify when in stock',
     backInStock: 'Back in stock',
 
     pendingApproval: 'Pending approval',
@@ -314,7 +316,7 @@ const en: I18nStrings = {
     userJoined: 'Joined',
     userLastLogin: 'Last login',
 
-    sites: 'Sites',
+    sites: 'Prices',
     nSites: '{n} sites',
     addUrl: 'Add URL',
     removeUrl: 'Remove URL',
@@ -335,6 +337,8 @@ const en: I18nStrings = {
     matchReasons: 'Why this matched',
     queryUsed: 'Query',
     discoveryUnavailable: 'Discovery is unavailable until SerpApi is configured.',
+    trackMatch: 'Track price',
+    cannotRemoveLastUrl: 'Cannot remove the last URL',
 
     // Page inspector
     pickSelector: 'Pick selector',
@@ -498,7 +502,7 @@ const sv: I18nStrings = {
     outOfStock: 'Slut i lager',
     preorder: 'Förbeställning',
     availabilityUnknown: 'Okänt',
-    notifyBackInStock: 'Meddela när åter i lager',
+    notifyBackInStock: 'Meddela bara när i lager',
     backInStock: 'Åter i lager',
 
     pendingApproval: 'Väntar på godkännande',
@@ -514,7 +518,7 @@ const sv: I18nStrings = {
     userJoined: 'Registrerad',
     userLastLogin: 'Senaste inloggning',
 
-    sites: 'Sidor',
+    sites: 'Priser',
     nSites: '{n} sidor',
     addUrl: 'Lägg till URL',
     removeUrl: 'Ta bort URL',
@@ -535,6 +539,8 @@ const sv: I18nStrings = {
     matchReasons: 'Varför den matchar',
     queryUsed: 'Sökfråga',
     discoveryUnavailable: 'Matchsökning är inte tillgänglig förrän SerpApi är konfigurerat.',
+    trackMatch: 'Bevaka pris',
+    cannotRemoveLastUrl: 'Kan inte ta bort sista URL:en',
 
     // Page inspector
     pickSelector: 'Välj selektor',

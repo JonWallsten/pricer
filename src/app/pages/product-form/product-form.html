@@ -63,6 +63,9 @@
                                     />
                                 }
                                 <div class="preview-info">
+                                    @if (prev.page_title) {
+                                        <span class="preview-title">{{ prev.page_title }}</span>
+                                    }
                                     @if (prev.price !== null) {
                                         <span class="preview-price">{{
                                             formatPrice(prev.price, prev.currency)

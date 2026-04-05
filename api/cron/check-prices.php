@@ -192,12 +192,14 @@ foreach ($productsToSync as $productId => $info) {
         $oldAvailability = $info['old_availability'];
 
         // Check for back-in-stock transition: out_of_stock → in_stock
+        // Only notify if alert also has target_price met
         if ($oldAvailability === 'out_of_stock' && $bestAvail === 'in_stock') {
             $bisStmt = $db->prepare(
                 'SELECT a.id FROM alerts a
-                 WHERE a.product_id = :pid AND a.is_active = 1 AND a.notify_back_in_stock = 1'
+                 WHERE a.product_id = :pid AND a.is_active = 1 AND a.notify_back_in_stock = 1
+                   AND a.target_price >= :price'
             );
-            $bisStmt->execute([':pid' => $productId]);
+            $bisStmt->execute([':pid' => $productId, ':price' => $currentPrice]);
             $bisAlerts = $bisStmt->fetchAll();
 
             foreach ($bisAlerts as $bisAlert) {
@@ -229,6 +231,13 @@ foreach ($productsToSync as $productId => $info) {
 
         foreach ($alerts as $alert) {
             $targetPrice = (float) $alert['target_price'];
+
+            // If alert requires in-stock and product is out of stock, defer notification
+            if (!empty($alert['notify_back_in_stock']) && $bestAvail !== 'in_stock') {
+                echo "    → Alert target met but out of stock, deferring (target: $targetPrice).\n";
+                continue;
+            }
+
             echo "    → Alert triggered! Notifying {$info['user_email']} (target: $targetPrice)... ";
 
             $sent = sendNotification(

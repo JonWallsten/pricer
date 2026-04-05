@@ -314,8 +314,12 @@
     text-transform: capitalize;
 }
 
-.site-refresh-btn {
+.site-menu-btn {
     flex-shrink: 0;
+}
+
+.site-remove-item {
+    color: var(--mat-sys-error);
 }
 
 .site-error {
@@ -412,6 +416,22 @@
     flex-shrink: 0;
     text-align: right;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.match-track-btn {
+    font-size: 12px;
+    --mdc-text-button-label-text-size: 12px;
+    --mdc-outlined-button-label-text-size: 12px;
+
+    mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+    }
 }
 
 .match-reasons {
@@ -758,7 +778,7 @@
         line-height: 1.1;
     }
 
-    .site-refresh-btn {
+    .site-menu-btn {
         grid-area: action;
         align-self: center;
         justify-self: end;

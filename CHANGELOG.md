@@ -10,9 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Price parsing bug**: `extractGenericScriptPrices` regex greedily captured trailing JSON commas (e.g. `129.0,`) causing `parsePrice` to misinterpret `129.0` as European `1.290` → `1290`
 - **Page inspector cross-origin error**: inspector script is now injected into HTML before setting `srcdoc`, eliminating `contentDocument` access on the sandboxed iframe
+- **Encoding/charset detection**: `fetchPage` now detects charset from HTTP `Content-Type` header and HTML meta tags, converting non-UTF-8 pages (e.g. ISO-8859-1) to UTF-8 — fixes mojibake in product titles like "KÃ¶ksredskap" → "Köksredskap"
+
+### Changed
+
+- **Back-in-stock notification logic**: the "notify back in stock" flag now means "only notify when in stock" — price alerts are deferred while the product is out of stock, and back-in-stock emails only fire when the price target is also met. Wording updated from "Meddela när åter i lager" to "Meddela bara när i lager" to avoid implying the item is already out of stock.
 
 ### Added
 
+- **Track match URL**: "Track price" button on cross-store matches lets users add a matched URL directly to the product's tracked URLs with automatic price extraction
+- **Remove tracked URL**: three-dot menu on each tracked URL with Check now, Debug, and Remove URL actions; `DELETE /products/:id/urls/:urlId` API endpoint with last-URL guard
+- **Price-first match sorting**: matches with extracted prices are now sorted above priceless ones
+- New `POST /products/:id/add-url` API endpoint for adding a single URL to an existing product
 - **Locale-aware price formatting**: all price displays now use the app's current locale (sv-SE / en-US) for decimal separators and currency formatting, instead of hardcoded Swedish locale
 - **Domain pattern learning**: the system now learns which extraction methods and CSS selectors work per domain, stores them in a `domain_patterns` table, and auto-suggests known-working selectors when adding new URLs from recognized domains
 - New `GET /products/domain-pattern` API endpoint returns ranked patterns and best selector for a given URL's domain

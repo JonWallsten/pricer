@@ -284,29 +284,38 @@
                                         }}</span>
                                     }
                                 </div>
-                                <button
-                                    mat-icon-button
-                                    class="site-debug-btn"
-                                    (click)="debugUrl(siteUrl)"
-                                    [attr.aria-label]="i18n.strings().debugExtraction"
-                                    [title]="i18n.strings().debugExtraction"
-                                >
-                                    <mat-icon>bug_report</mat-icon>
-                                </button>
-                                <button
-                                    mat-icon-button
-                                    class="site-refresh-btn"
-                                    (click)="checkSingleUrl(siteUrl.id)"
-                                    [disabled]="checkingUrlIds().has(siteUrl.id)"
-                                    [attr.aria-label]="i18n.strings().checkNow"
-                                    [title]="i18n.strings().checkNow"
-                                >
-                                    @if (checkingUrlIds().has(siteUrl.id)) {
-                                        <mat-spinner diameter="18"></mat-spinner>
-                                    } @else {
+                                @if (checkingUrlIds().has(siteUrl.id)) {
+                                    <mat-spinner diameter="18"></mat-spinner>
+                                } @else {
+                                    <button
+                                        mat-icon-button
+                                        class="site-menu-btn"
+                                        [matMenuTriggerFor]="urlMenu"
+                                        aria-label="Actions"
+                                    >
+                                        <mat-icon>more_vert</mat-icon>
+                                    </button>
+                                }
+                                <mat-menu #urlMenu="matMenu">
+                                    <button mat-menu-item (click)="checkSingleUrl(siteUrl.id)">
                                         <mat-icon>refresh</mat-icon>
+                                        <span>{{ i18n.strings().checkNow }}</span>
+                                    </button>
+                                    <button mat-menu-item (click)="debugUrl(siteUrl)">
+                                        <mat-icon>bug_report</mat-icon>
+                                        <span>{{ i18n.strings().debugExtraction }}</span>
+                                    </button>
+                                    @if (urls().length > 1) {
+                                        <button
+                                            mat-menu-item
+                                            class="site-remove-item"
+                                            (click)="removeUrl(siteUrl)"
+                                        >
+                                            <mat-icon>delete</mat-icon>
+                                            <span>{{ i18n.strings().removeUrl }}</span>
+                                        </button>
                                     }
-                                </button>
+                                </mat-menu>
                             </div>
                             @if (
                                 siteUrl.last_check_status === 'error' && siteUrl.last_check_error
@@ -349,7 +358,7 @@
                 <div class="chart-placeholder">
                     <mat-spinner diameter="24"></mat-spinner>
                 </div>
-            } @else if (matches().length === 0) {
+            } @else if (filteredMatches().length === 0) {
                 <div class="alerts-empty matches-empty">
                     <mat-icon class="empty-icon">travel_explore</mat-icon>
                     <p>{{ i18n.strings().noMatches }}</p>
@@ -357,7 +366,7 @@
                 </div>
             } @else {
                 <div class="match-list">
-                    @for (match of matches(); track match.id) {
+                    @for (match of filteredMatches(); track match.id) {
                         <div class="match-item">
                             <div class="match-top">
                                 <div class="match-main">
@@ -434,6 +443,19 @@
                                             )
                                         }}</span>
                                     }
+                                    <button
+                                        mat-stroked-button
+                                        class="match-track-btn"
+                                        [disabled]="addingMatchUrls().has(match.candidate_url)"
+                                        (click)="addMatchUrl(match)"
+                                    >
+                                        @if (addingMatchUrls().has(match.candidate_url)) {
+                                            <mat-spinner diameter="16"></mat-spinner>
+                                        } @else {
+                                            <mat-icon>add_circle</mat-icon>
+                                        }
+                                        {{ i18n.strings().trackMatch }}
+                                    </button>
                                 </div>
                             </div>
                             @if (match.reasons.length > 0) {

@@ -42,11 +42,8 @@ function extractPrice(string $url, ?string $cssSelector = null, string $extracti
         return $result;
     }
 
-    // Suppress HTML parsing warnings
     $doc = new DOMDocument();
-    $internalErrors = libxml_use_internal_errors(true);
-    $doc->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);
-    libxml_use_internal_errors($internalErrors);
+    loadHtmlUtf8($doc, $html);
 
     // Extract product image and availability (independent of price method)
     $result['image_url'] = extractProductImage($doc, $url);
@@ -100,9 +97,7 @@ function extractPageTitle(string $url): ?string
         return null;
     }
     $doc = new DOMDocument();
-    $internalErrors = libxml_use_internal_errors(true);
-    $doc->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);
-    libxml_use_internal_errors($internalErrors);
+    loadHtmlUtf8($doc, $html);
 
     return extractPageTitleFromDoc($doc);
 }
@@ -191,6 +186,72 @@ function isPublicIpAddress(string $ip): bool
 }
 
 /**
+ * Detect charset from HTTP headers and HTML meta tags, convert to UTF-8 if needed.
+ */
+function ensureUtf8(string $body, string $headers): string
+{
+    $charset = null;
+
+    // 1. Check Content-Type header: text/html; charset=iso-8859-1
+    if (preg_match('/Content-Type:\s*[^;\r\n]+;\s*charset=([^\s;\r\n]+)/i', $headers, $m)) {
+        $charset = trim($m[1], '"\'');
+    }
+
+    // 2. Check HTML meta tags: <meta charset="..."> or <meta http-equiv="Content-Type" content="...; charset=...">
+    if ($charset === null) {
+        if (preg_match('/<meta\s[^>]*charset=["\']?([^"\'\s;>]+)/i', $body, $m)) {
+            $charset = $m[1];
+        } elseif (preg_match('/<meta\s[^>]*content=["\'][^"\']*charset=([^"\'\s;>]+)/i', $body, $m)) {
+            $charset = $m[1];
+        }
+    }
+
+    if ($charset === null) {
+        // Default: if it's already valid UTF-8, return as-is
+        if (mb_check_encoding($body, 'UTF-8')) {
+            return $body;
+        }
+        // Otherwise assume ISO-8859-1 (most common non-UTF-8 encoding for Swedish sites)
+        $charset = 'ISO-8859-1';
+    }
+
+    $charset = strtoupper(trim($charset));
+
+    // Already UTF-8
+    if ($charset === 'UTF-8' || $charset === 'UTF8') {
+        return $body;
+    }
+
+    $converted = mb_convert_encoding($body, 'UTF-8', $charset);
+    return $converted !== false ? $converted : $body;
+}
+
+/**
+ * Load HTML into a DOMDocument with correct UTF-8 handling.
+ * DOMDocument::loadHTML() defaults to Latin-1 unless the markup declares a charset.
+ * We prepend a UTF-8 meta tag to ensure correct interpretation.
+ */
+function loadHtmlUtf8(DOMDocument $doc, string $html): void
+{
+    // libxml's HTML4 parser only recognises <meta http-equiv="Content-Type" …; charset=…>.
+    // The HTML5 shorthand <meta charset="utf-8"> is ignored, causing Latin-1 default.
+    // Replace any HTML5 charset meta with the HTML4 equivalent, or prepend one if missing.
+    if (preg_match('/<meta\s+charset=["\']?[^"\'>\s]+["\']?\s*\/?>/i', $html)) {
+        $html = preg_replace(
+            '/<meta\s+charset=["\']?[^"\'>\s]+["\']?\s*\/?>/i',
+            '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">',
+            $html,
+            1
+        );
+    } elseif (!preg_match('/<meta\s[^>]*http-equiv=["\']?Content-Type["\']?[^>]*charset/i', $html)) {
+        $html = '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">' . $html;
+    }
+    $internalErrors = libxml_use_internal_errors(true);
+    $doc->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);
+    libxml_use_internal_errors($internalErrors);
+}
+
+/**
  * Fetch a page over HTTP using cURL.
  */
 function fetchPage(string $url): ?string
@@ -217,18 +278,23 @@ function fetchPage(string $url): ?string
         // SSL verification
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_HEADER         => true,
     ]);
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
     $error = curl_error($ch);
     curl_close($ch);
 
-    if ($response === false || $httpCode >= 400) {
+    if ($response === false || !is_string($response) || $httpCode >= 400) {
         return null;
     }
 
-    return is_string($response) ? $response : null;
+    $headers = substr($response, 0, $headerSize);
+    $body = substr($response, $headerSize);
+
+    return ensureUtf8($body, $headers);
 }
 
 // ─── Extraction methods ───────────────────────────────────
@@ -635,9 +701,7 @@ function extractPreview(string $url, ?string $cssSelector = null, string $extrac
     }
 
     $doc = new DOMDocument();
-    $internalErrors = libxml_use_internal_errors(true);
-    $doc->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);
-    libxml_use_internal_errors($internalErrors);
+    loadHtmlUtf8($doc, $html);
 
     // Extract all metadata from the single fetch
     $result['image_url'] = extractProductImage($doc, $url);
@@ -2994,9 +3058,7 @@ function detectPageQualityIssues(DOMDocument $doc, string $rawHtml): array
 function preparePageForPreview(string $html, string $url): array
 {
     $doc = new DOMDocument();
-    $internalErrors = libxml_use_internal_errors(true);
-    $doc->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);
-    libxml_use_internal_errors($internalErrors);
+    loadHtmlUtf8($doc, $html);
 
     // Run diagnostics on original DOM (before stripping)
     $jsInfo = detectJsRendering($doc, $html);

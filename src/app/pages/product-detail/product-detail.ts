@@ -3,6 +3,7 @@ import {
     Component,
     inject,
     signal,
+    computed,
     effect,
     input,
     OnInit,
@@ -22,6 +23,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
+import { MatMenuModule } from '@angular/material/menu';
 import { ApiService } from '../../api.service';
 import { I18nService } from '../../i18n.service';
 import {
@@ -54,6 +56,7 @@ Chart.register(...registerables);
         MatButtonToggleModule,
         MatCheckboxModule,
         MatSelectModule,
+        MatMenuModule,
         TimeAgoPipe,
     ],
 })
@@ -81,6 +84,11 @@ export class ProductDetail implements OnInit, OnDestroy {
     protected readonly matchesLoading = signal(false);
     protected readonly discoveringMatches = signal(false);
     protected readonly matchesError = signal<string | null>(null);
+    protected readonly addingMatchUrls = signal<Set<string>>(new Set());
+    protected readonly trackedUrls = computed(() => new Set(this.urls().map((u) => u.url)));
+    protected readonly filteredMatches = computed(() =>
+        this.matches().filter((m) => !this.trackedUrls().has(m.candidate_url)),
+    );
 
     readonly chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('priceChart');
     private chart: Chart | null = null;
@@ -339,6 +347,32 @@ export class ProductDetail implements OnInit, OnDestroy {
         }
     }
 
+    async removeUrl(siteUrl: ProductUrl) {
+        if (this.urls().length <= 1) return;
+        try {
+            await this.api.deleteProductUrl(Number(this.id()), siteUrl.id);
+            this.urls.update((list) => list.filter((u) => u.id !== siteUrl.id));
+            const remaining = this.urls();
+            if (remaining.length > 0) {
+                const best = remaining.reduce((a, b) =>
+                    (a.current_price ?? Infinity) <= (b.current_price ?? Infinity) ? a : b,
+                );
+                this.product.update((p) =>
+                    p
+                        ? {
+                              ...p,
+                              best_price: best.current_price,
+                              currency: best.currency,
+                              url: remaining[0].url,
+                          }
+                        : p,
+                );
+            }
+        } catch {
+            // Error
+        }
+    }
+
     async discoverMatches(force = false) {
         this.discoveringMatches.set(true);
         this.matchesError.set(null);
@@ -351,6 +385,25 @@ export class ProductDetail implements OnInit, OnDestroy {
             );
         } finally {
             this.discoveringMatches.set(false);
+        }
+    }
+
+    async addMatchUrl(match: ProductMatchCandidate) {
+        const url = match.candidate_url;
+        if (this.trackedUrls().has(url) || this.addingMatchUrls().has(url)) return;
+
+        this.addingMatchUrls.update((s) => new Set(s).add(url));
+        try {
+            const newUrl = await this.api.addProductUrl(Number(this.id()), url);
+            this.urls.update((list) => [...list, newUrl]);
+        } catch {
+            // Error — silently fail, button will revert
+        } finally {
+            this.addingMatchUrls.update((s) => {
+                const next = new Set(s);
+                next.delete(url);
+                return next;
+            });
         }
     }
 

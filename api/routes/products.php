@@ -596,6 +596,113 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
         return;
     }
 
+    // DELETE /products/:id/urls/:urlId — remove a single tracked URL
+    if ($method === 'DELETE' && preg_match('#^/products/(\d+)/urls/(\d+)$#', $path, $m)) {
+        $productId = (int) $m[1];
+        $urlId     = (int) $m[2];
+
+        // Verify product ownership
+        $stmt = $db->prepare('SELECT id FROM products WHERE id = :id AND user_id = :uid');
+        $stmt->execute([':id' => $productId, ':uid' => $userId]);
+        if (!$stmt->fetch()) {
+            sendJson(['error' => 'Product not found'], 404);
+            return;
+        }
+
+        // Verify URL belongs to this product
+        $urlStmt = $db->prepare('SELECT id FROM product_urls WHERE id = :uid AND product_id = :pid');
+        $urlStmt->execute([':uid' => $urlId, ':pid' => $productId]);
+        if (!$urlStmt->fetch()) {
+            sendJson(['error' => 'URL not found'], 404);
+            return;
+        }
+
+        // Prevent removing the last URL
+        $countStmt = $db->prepare('SELECT COUNT(*) FROM product_urls WHERE product_id = :pid');
+        $countStmt->execute([':pid' => $productId]);
+        if ((int) $countStmt->fetchColumn() <= 1) {
+            sendJson(['error' => 'Cannot remove the last URL — delete the product instead'], 400);
+            return;
+        }
+
+        $db->prepare('DELETE FROM product_urls WHERE id = :id')->execute([':id' => $urlId]);
+
+        // Sync product best price and primary URL
+        syncProductBestPrice($db, $productId);
+        $firstUrl = $db->prepare('SELECT url, css_selector FROM product_urls WHERE product_id = :pid ORDER BY id ASC LIMIT 1');
+        $firstUrl->execute([':pid' => $productId]);
+        $first = $firstUrl->fetch();
+        if ($first) {
+            $db->prepare('UPDATE products SET url = :url, css_selector = :css WHERE id = :id')
+                ->execute([':url' => $first['url'], ':css' => $first['css_selector'], ':id' => $productId]);
+        }
+
+        sendJson(['success' => true]);
+        return;
+    }
+
+    // POST /products/:id/add-url — add a single URL to an existing product
+    if ($method === 'POST' && preg_match('#^/products/(\d+)/add-url$#', $path, $m)) {
+        $productId = (int) $m[1];
+
+        $stmt = $db->prepare('SELECT * FROM products WHERE id = :id AND user_id = :uid');
+        $stmt->execute([':id' => $productId, ':uid' => $userId]);
+        $product = $stmt->fetch();
+        if (!$product) {
+            sendJson(['error' => 'Product not found'], 404);
+            return;
+        }
+
+        $body = getJsonBody();
+        $url = trim($body['url'] ?? '');
+        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+            sendJson(['error' => 'A valid URL is required'], 400);
+            return;
+        }
+        if (!isAllowedFetchUrl($url)) {
+            sendJson(['error' => 'URL must use http/https and resolve to a public host'], 400);
+            return;
+        }
+
+        // Check for duplicate
+        $dupStmt = $db->prepare('SELECT id FROM product_urls WHERE product_id = :pid AND url = :url');
+        $dupStmt->execute([':pid' => $productId, ':url' => $url]);
+        if ($dupStmt->fetch()) {
+            sendJson(['error' => 'This URL is already tracked for this product'], 409);
+            return;
+        }
+
+        // Insert new URL
+        $insertStmt = $db->prepare(
+            'INSERT INTO product_urls (product_id, url, extraction_strategy) VALUES (:pid, :url, :es)'
+        );
+        $insertStmt->execute([':pid' => $productId, ':url' => $url, ':es' => 'auto']);
+        $urlId = (int) $db->lastInsertId();
+
+        // Extract price immediately
+        $result = extractPrice($url, null, 'auto');
+        updateProductUrlFromResult($db, $urlId, $result);
+
+        // Record domain pattern
+        if ($result['price'] !== null) {
+            recordSuccessfulPattern($db, $url, $result);
+        } else {
+            recordFailedPattern($db, $url, $result['method'] ?? null, null);
+        }
+
+        // Sync product best price
+        syncProductBestPrice($db, $productId);
+
+        // Return the new URL row
+        $newUrl = $db->prepare('SELECT * FROM product_urls WHERE id = :id');
+        $newUrl->execute([':id' => $urlId]);
+        $urlRow = $newUrl->fetch();
+        castProductUrlFields($urlRow);
+
+        sendJson(['url' => $urlRow], 201);
+        return;
+    }
+
     // GET /products/:id/matches — persisted cross-store matches
     if ($method === 'GET' && preg_match('#^/products/(\d+)/matches$#', $path, $m)) {
         $productId = (int) $m[1];

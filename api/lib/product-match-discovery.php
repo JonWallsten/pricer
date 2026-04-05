@@ -10,7 +10,7 @@ function listProductMatches(PDO $db, int $productId, bool $includeWeak = false):
     if (!$includeWeak) {
         $sql .= " AND excluded = 0 AND confidence_score >= 50";
     }
-    $sql .= ' ORDER BY confidence_score DESC, last_searched_at DESC, id ASC';
+    $sql .= ' ORDER BY (candidate_price IS NOT NULL) DESC, confidence_score DESC, last_searched_at DESC, id ASC';
 
     $stmt = $db->prepare($sql);
     $stmt->execute([':pid' => $productId]);
