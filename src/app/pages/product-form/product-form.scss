@@ -129,6 +129,44 @@
     font-size: 14px;
 }
 
+// ─── Pre-save Price Warning ───────────────────────────────
+.price-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--app-radius-sm);
+    background: light-dark(#fff3e0, #3e2723);
+    border: 1px solid light-dark(#ffe0b2, #5d4037);
+    color: light-dark(#e65100, #ffb74d);
+
+    mat-icon {
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+}
+
+.price-warning-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.price-warning-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.price-warning-hint {
+    font-size: 13px;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.save-anyway-btn {
+    --mdc-filled-button-container-color: var(--mat-sys-error);
+    --mdc-filled-button-label-text-color: var(--mat-sys-on-error);
+}
+
 .actions {
     display: flex;
     justify-content: flex-end;
@@ -138,4 +176,59 @@
 
 .strategy-field {
     max-width: 220px;
+}
+
+// ─── Domain Pattern Suggestion ────────────────────────────
+.domain-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: light-dark(#e8f5e9, #1b3a1f);
+    border: 1px solid light-dark(#c8e6c9, #2e5a31);
+}
+
+.suggestion-icon {
+    color: light-dark(#2e7d32, #81c784);
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.suggestion-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.suggestion-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: light-dark(#2e7d32, #81c784);
+}
+
+.suggestion-selector {
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 12px;
+    color: var(--mat-sys-on-surface);
+    word-break: break-all;
+}
+
+.suggestion-detail {
+    font-size: 11px;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.suggestion-apply-btn {
+    flex-shrink: 0;
+    font-size: 12px;
+}
+
+.suggestion-dismiss-btn {
+    flex-shrink: 0;
+    color: var(--mat-sys-on-surface-variant);
 }

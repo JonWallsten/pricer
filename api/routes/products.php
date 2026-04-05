@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/price-scraper.php';
 require_once __DIR__ . '/../lib/product-match-discovery.php';
+require_once __DIR__ . '/../lib/domain-patterns.php';
 
 function handleProductRoutes(string $method, string $path, array $authUser): void
 {
@@ -52,6 +53,33 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
         }
         $result = extractPreview($url, $cssSelector ?: null, $extractionStrategy);
         sendJson(['preview' => $result]);
+        return;
+    }
+
+    // GET /products/domain-pattern — suggest known patterns for a domain
+    if ($method === 'GET' && $path === '/products/domain-pattern') {
+        $url = trim($_GET['url'] ?? '');
+        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+            sendJson(['error' => 'A valid URL is required'], 400);
+            return;
+        }
+
+        $patterns = getDomainPatterns($db, $url);
+        $bestSelector = getBestSelectorForDomain($db, $url);
+
+        // Determine best overall method
+        $suggestedMethod = null;
+        if (!empty($patterns)) {
+            $suggestedMethod = $patterns[0]['extraction_method'];
+        }
+
+        sendJson([
+            'patterns'          => $patterns,
+            'suggested_selector' => $bestSelector['css_selector'] ?? null,
+            'suggested_method'  => $suggestedMethod,
+            'hit_count'         => $bestSelector['hit_count'] ?? 0,
+            'success_rate'      => $bestSelector['success_rate'] ?? 0,
+        ]);
         return;
     }
 
@@ -200,6 +228,13 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
 
             $result = extractPrice($u['url'], $u['css_selector'], $u['extraction_strategy'] ?? 'auto');
             updateProductUrlFromResult($db, $urlId, $result);
+
+            // Record domain pattern for learning
+            if ($result['price'] !== null) {
+                recordSuccessfulPattern($db, $u['url'], $result);
+            } else {
+                recordFailedPattern($db, $u['url'], $result['method'] ?? null, $u['css_selector']);
+            }
         }
 
         // Sync product's best price from product_urls
@@ -420,6 +455,14 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
         foreach ($productUrls as $pu) {
             $result = extractPrice($pu['url'], $pu['css_selector'], $pu['extraction_strategy'] ?? 'auto');
             updateProductUrlFromResult($db, (int) $pu['id'], $result);
+
+            // Record domain pattern for learning
+            if ($result['price'] !== null) {
+                recordSuccessfulPattern($db, $pu['url'], $result);
+            } else {
+                recordFailedPattern($db, $pu['url'], $result['method'] ?? null, $pu['css_selector']);
+            }
+
             $results[] = [
                 'url_id' => (int) $pu['id'],
                 'url' => $pu['url'],
@@ -480,6 +523,13 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
 
         $result = extractPrice($pu['url'], $pu['css_selector'], $pu['extraction_strategy'] ?? 'auto');
         updateProductUrlFromResult($db, $urlId, $result);
+
+        // Record domain pattern for learning
+        if ($result['price'] !== null) {
+            recordSuccessfulPattern($db, $pu['url'], $result);
+        } else {
+            recordFailedPattern($db, $pu['url'], $result['method'] ?? null, $pu['css_selector']);
+        }
 
         // Re-sync product best price
         syncProductBestPrice($db, $productId);

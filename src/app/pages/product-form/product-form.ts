@@ -22,7 +22,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '../../api.service';
 import { I18nService } from '../../i18n.service';
-import { PreviewResult, PageInspectorData, ExtractionStrategy } from '../../models';
+import {
+    PreviewResult,
+    PageInspectorData,
+    ExtractionStrategy,
+    DomainPatternSuggestion,
+} from '../../models';
 
 @Component({
     selector: 'app-product-form',
@@ -55,10 +60,15 @@ export class ProductForm implements OnInit, OnDestroy {
     protected readonly saving = signal(false);
     protected readonly errorMsg = signal('');
     protected readonly isEdit = signal(false);
+    protected readonly priceWarning = signal(false);
 
     /** Per-URL preview state: index → preview data */
     protected readonly previews = signal<Map<number, PreviewResult>>(new Map());
     protected readonly fetchingIndexes = signal<Set<number>>(new Set());
+
+    /** Per-URL domain pattern suggestions */
+    protected readonly domainSuggestions = signal<Map<number, DomainPatternSuggestion>>(new Map());
+    protected readonly dismissedSuggestions = signal<Set<number>>(new Set());
 
     /** Discount chip percentages */
     protected readonly discountOptions = [5, 10, 25, 50] as const;
@@ -207,9 +217,13 @@ export class ProductForm implements OnInit, OnDestroy {
             return next;
         });
 
+        // Fetch domain pattern suggestion in parallel
+        this.fetchDomainSuggestion(index, url);
+
         try {
             const result = await this.api.previewUrl(url, cssSelector, extractionStrategy);
             this.previews.update((m) => new Map(m).set(index, result));
+            this.priceWarning.set(false);
 
             // Auto-fill name from first URL's page title if name is empty
             if (index === 0 && !this.form.controls.name.value && result.page_title) {
@@ -252,10 +266,63 @@ export class ProductForm implements OnInit, OnDestroy {
         }
     }
 
+    private async fetchDomainSuggestion(index: number, url: string) {
+        try {
+            const suggestion = await this.api.getDomainPattern(url);
+            if (!suggestion.suggested_selector && !suggestion.suggested_method) return;
+
+            this.domainSuggestions.update((m) => new Map(m).set(index, suggestion));
+        } catch {
+            // Domain pattern lookup is best-effort
+        }
+    }
+
+    protected applySuggestion(index: number) {
+        const suggestion = this.domainSuggestions().get(index);
+        if (!suggestion?.suggested_selector) return;
+
+        const group = this.urlsArray.at(index);
+        if (!group) return;
+
+        group.controls['css_selector'].setValue(suggestion.suggested_selector);
+        this.dismissedSuggestions.update((s) => {
+            const next = new Set(s);
+            next.delete(index);
+            return next;
+        });
+        this.fetchPreview(index);
+    }
+
+    protected dismissSuggestion(index: number) {
+        this.dismissedSuggestions.update((s) => new Set(s).add(index));
+    }
+
     async save() {
         if (this.form.invalid) return;
-        this.saving.set(true);
         this.errorMsg.set('');
+
+        // Pre-save validation: block if any URL has no extracted price (new products only)
+        if (!this.isEdit() && !this.priceWarning()) {
+            const previews = this.previews();
+            const urlCount = this.urlsArray.length;
+            let hasFailure = false;
+
+            for (let i = 0; i < urlCount; i++) {
+                const preview = previews.get(i);
+                if (!preview || preview.price === null || preview.price === undefined) {
+                    hasFailure = true;
+                    break;
+                }
+            }
+
+            if (hasFailure) {
+                this.priceWarning.set(true);
+                return;
+            }
+        }
+
+        this.saving.set(true);
+        this.priceWarning.set(false);
 
         const val = this.form.getRawValue();
         const urls = val.urls.map((u, i) => {

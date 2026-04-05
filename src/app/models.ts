@@ -237,6 +237,25 @@ export interface MainProductContext {
     reasons: string[];
 }
 
+export interface DomainPattern {
+    extraction_method: string;
+    pattern_type: string | null;
+    css_selector: string | null;
+    debug_path: string | null;
+    hit_count: number;
+    fail_count: number;
+    success_rate: number;
+    last_success_at: string;
+}
+
+export interface DomainPatternSuggestion {
+    patterns: DomainPattern[];
+    suggested_selector: string | null;
+    suggested_method: string | null;
+    hit_count: number;
+    success_rate: number;
+}
+
 export interface PageInspectorData {
     interactionMode: 'pick' | 'debug';
     url: string;

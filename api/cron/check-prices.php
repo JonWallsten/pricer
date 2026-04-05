@@ -28,6 +28,7 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/price-scraper.php';
 require_once __DIR__ . '/../lib/mailer.php';
+require_once __DIR__ . '/../lib/domain-patterns.php';
 
 $startTime = microtime(true);
 $timestamp = date('Y-m-d H:i:s');
@@ -101,6 +102,13 @@ foreach ($urlRows as $row) {
         ]);
 
         $errors++;
+    }
+
+    // Record domain pattern for learning
+    if ($result['price'] !== null) {
+        recordSuccessfulPattern($db, $row['url'], $result);
+    } else {
+        recordFailedPattern($db, $row['url'], $result['method'] ?? null, $row['css_selector']);
     }
 
     // Mark this product for syncing

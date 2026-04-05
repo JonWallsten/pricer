@@ -199,6 +199,19 @@ interface I18nStrings {
     confidence: string;
     associationScore: string;
     priceRole: string;
+
+    // Domain pattern learning
+    knownPattern: string;
+    knownPatternHint: string;
+    successfulExtractions: string;
+    applySuggestion: string;
+    dismissSuggestion: string;
+    methodRanking: string;
+
+    // Pre-save validation
+    priceValidationFailed: string;
+    priceValidationHint: string;
+    saveAnyway: string;
 }
 
 const en: I18nStrings = {
@@ -387,6 +400,18 @@ const en: I18nStrings = {
     confidence: 'Confidence',
     associationScore: 'Association',
     priceRole: 'Role',
+
+    knownPattern: 'Known pattern',
+    knownPatternHint: '{selector} has worked {count} times on this site ({rate}% success rate)',
+    successfulExtractions: 'successful extractions',
+    applySuggestion: 'Apply',
+    dismissSuggestion: 'Dismiss',
+    methodRanking: 'Best method for this site: {method}',
+
+    priceValidationFailed: 'Could not extract a price',
+    priceValidationHint:
+        'Try adding a CSS selector or using the element picker to point to the price on the page.',
+    saveAnyway: 'Save anyway',
 };
 
 const sv: I18nStrings = {
@@ -575,6 +600,18 @@ const sv: I18nStrings = {
     confidence: 'Konfidens',
     associationScore: 'Koppling',
     priceRole: 'Roll',
+
+    knownPattern: 'Känt mönster',
+    knownPatternHint: '{selector} har fungerat {count} gånger på denna sida ({rate}% lyckade)',
+    successfulExtractions: 'lyckade extraheringar',
+    applySuggestion: 'Använd',
+    dismissSuggestion: 'Ignorera',
+    methodRanking: 'Bästa metod för denna sida: {method}',
+
+    priceValidationFailed: 'Kunde inte hitta ett pris',
+    priceValidationHint:
+        'Prova att lägga till en CSS-väljare eller använd elementväljaren för att peka ut priset på sidan.',
+    saveAnyway: 'Spara ändå',
 };
 
 const translations: Record<Lang, I18nStrings> = { en, sv };

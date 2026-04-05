@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **Domain pattern learning**: the system now learns which extraction methods and CSS selectors work per domain, stores them in a `domain_patterns` table, and auto-suggests known-working selectors when adding new URLs from recognized domains
+- New `GET /products/domain-pattern` API endpoint returns ranked patterns and best selector for a given URL's domain
+- Product form shows a suggestion banner with Apply/Dismiss when a known CSS selector exists for the domain
+- Patterns recorded from product creation, manual price checks, and hourly cron — ranked by hit count and success rate
+- Migration 012: `domain_patterns` table with domain, method, selector, hit/fail counts, and success rate
+- 7 new i18n keys (en + sv) for domain pattern suggestion UI
+- **Pre-save price validation**: when adding a new product, the form now blocks saving if no price was extracted from any URL — shows a warning banner suggesting the user add a CSS selector or use the element picker, with a "Save anyway" override button
 - **Product pricing interpretation system**: new layer that identifies the main product on a page, classifies price roles, scores product association, detects campaigns, and selects the primary price
 - **Main product context**: `buildMainProductContext()` aggregates product identity (name, SKU, GTIN, brand) from JSON-LD, meta tags, microdata, DOM signals, and data attributes with confidence scoring
 - **Price role classification**: `classifyPriceRole()` identifies prices as current, regular, campaign, previous_lowest (Omnibus 30-day), unit, from, or member using field names, CSS patterns, and Swedish keywords

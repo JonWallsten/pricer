@@ -10,6 +10,7 @@ import {
     ProductMatchCandidate,
     ProductMatchDiscoveryResponse,
     PageSourceResponse,
+    DomainPatternSuggestion,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -144,6 +145,14 @@ export class ApiService {
             const err = await res.json().catch(() => ({}));
             throw new Error(err.error || 'Failed to fetch page source');
         }
+        return await res.json();
+    }
+
+    async getDomainPattern(url: string): Promise<DomainPatternSuggestion> {
+        const res = await fetch(`api/products/domain-pattern?url=${encodeURIComponent(url)}`, {
+            credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Failed to fetch domain pattern');
         return await res.json();
     }
 

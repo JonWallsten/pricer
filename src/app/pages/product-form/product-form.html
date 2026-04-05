@@ -116,6 +116,50 @@
                             <mat-hint>{{ i18n.strings().cssSelectorHint }}</mat-hint>
                         </mat-form-field>
 
+                        @if (domainSuggestions().get(i); as suggestion) {
+                            @if (
+                                suggestion.suggested_selector &&
+                                !dismissedSuggestions().has(i) &&
+                                urlGroup.controls['css_selector'].value !==
+                                    suggestion.suggested_selector
+                            ) {
+                                <div class="domain-suggestion">
+                                    <mat-icon class="suggestion-icon">lightbulb</mat-icon>
+                                    <div class="suggestion-content">
+                                        <span class="suggestion-label">{{
+                                            i18n.strings().knownPattern
+                                        }}</span>
+                                        <code class="suggestion-selector">{{
+                                            suggestion.suggested_selector
+                                        }}</code>
+                                        <span class="suggestion-detail">
+                                            {{ suggestion.hit_count }}
+                                            {{ i18n.strings().successfulExtractions }} ({{
+                                                suggestion.success_rate
+                                            }}%)
+                                        </span>
+                                    </div>
+                                    <button
+                                        mat-stroked-button
+                                        type="button"
+                                        class="suggestion-apply-btn"
+                                        (click)="applySuggestion(i)"
+                                    >
+                                        {{ i18n.strings().applySuggestion }}
+                                    </button>
+                                    <button
+                                        mat-icon-button
+                                        type="button"
+                                        class="suggestion-dismiss-btn"
+                                        (click)="dismissSuggestion(i)"
+                                        [attr.aria-label]="i18n.strings().dismissSuggestion"
+                                    >
+                                        <mat-icon>close</mat-icon>
+                                    </button>
+                                </div>
+                            }
+                        }
+
                         <mat-form-field appearance="outline" class="strategy-field">
                             <mat-label>{{ i18n.strings().extractionStrategy }}</mat-label>
                             <mat-select formControlName="extraction_strategy">
@@ -184,6 +228,20 @@
                     </div>
                 }
 
+                @if (priceWarning()) {
+                    <div class="price-warning" role="alert">
+                        <mat-icon>warning</mat-icon>
+                        <div class="price-warning-content">
+                            <span class="price-warning-title">{{
+                                i18n.strings().priceValidationFailed
+                            }}</span>
+                            <span class="price-warning-hint">{{
+                                i18n.strings().priceValidationHint
+                            }}</span>
+                        </div>
+                    </div>
+                }
+
                 @if (errorMsg()) {
                     <div class="error-msg">{{ errorMsg() }}</div>
                 }
@@ -192,12 +250,18 @@
                     <button mat-button type="button" (click)="goBack()">
                         {{ i18n.strings().cancel }}
                     </button>
-                    <button mat-flat-button type="submit" [disabled]="form.invalid || saving()">
-                        @if (saving()) {
-                            <mat-spinner diameter="18"></mat-spinner>
-                        }
-                        {{ i18n.strings().save }}
-                    </button>
+                    @if (priceWarning()) {
+                        <button mat-flat-button type="submit" class="save-anyway-btn">
+                            {{ i18n.strings().saveAnyway }}
+                        </button>
+                    } @else {
+                        <button mat-flat-button type="submit" [disabled]="form.invalid || saving()">
+                            @if (saving()) {
+                                <mat-spinner diameter="18"></mat-spinner>
+                            }
+                            {{ i18n.strings().save }}
+                        </button>
+                    }
                 </div>
             </form>
         </mat-card-content>
