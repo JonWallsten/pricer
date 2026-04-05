@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-04-05
+
 ### Fixed
 
 - **Price parsing bug**: `extractGenericScriptPrices` regex greedily captured trailing JSON commas (e.g. `129.0,`) causing `parsePrice` to misinterpret `129.0` as European `1.290` → `1290`
