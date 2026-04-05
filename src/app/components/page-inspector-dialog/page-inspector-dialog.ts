@@ -64,6 +64,7 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
     protected readonly priceMatches = signal<PriceCandidate[]>([]);
 
     private messageHandler: ((e: MessageEvent) => void) | null = null;
+    private readonly nonce = this.generateNonce();
 
     protected readonly isPick = computed(() => this.data.interactionMode === 'pick');
     protected readonly isDebug = computed(() => this.data.interactionMode === 'debug');
@@ -105,6 +106,37 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
         return val !== '' && !isNaN(parseFloat(val));
     });
 
+    /** HTML to set as iframe srcdoc — raw page HTML with inspector script injected */
+    protected readonly iframeHtml = computed(() => {
+        const pd = this.pageData();
+        if (!pd?.html) return '';
+
+        const nonce = this.nonce;
+        const mode = this.data.interactionMode;
+        const selector = this.selectorInput().trim();
+
+        const cspTag = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' * ; img-src * data:; font-src *; script-src 'nonce-${nonce}';">`;
+        const scriptTag = `<script nonce="${nonce}">${this.buildInspectorScript(mode, selector)}</script>`;
+
+        let html = pd.html;
+        // Inject CSP into <head>
+        const headIdx = html.indexOf('<head');
+        if (headIdx !== -1) {
+            const closeIdx = html.indexOf('>', headIdx);
+            if (closeIdx !== -1) {
+                html = html.slice(0, closeIdx + 1) + cspTag + html.slice(closeIdx + 1);
+            }
+        }
+        // Inject script before </body>
+        const bodyCloseIdx = html.lastIndexOf('</body>');
+        if (bodyCloseIdx !== -1) {
+            html = html.slice(0, bodyCloseIdx) + scriptTag + html.slice(bodyCloseIdx);
+        } else {
+            html += scriptTag;
+        }
+        return html;
+    });
+
     ngOnInit() {
         this.setupMessageListener();
         this.loadPage();
@@ -124,8 +156,6 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
             const selector = this.selectorInput().trim() || undefined;
             const data = await this.api.fetchPageSource(this.data.url, selector);
             this.pageData.set(data);
-            // Allow a tick for the iframe to render
-            setTimeout(() => this.injectInspectorScript(), 50);
         } catch (e) {
             this.error.set(e instanceof Error ? e.message : 'Failed to load page');
         } finally {
@@ -141,7 +171,6 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
         try {
             const data = await this.api.fetchPageSource(this.data.url, selector);
             this.pageData.set(data);
-            setTimeout(() => this.injectInspectorScript(), 50);
         } catch (e) {
             this.error.set(e instanceof Error ? e.message : 'Failed to test selector');
         } finally {
@@ -190,7 +219,6 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
             const data = await this.api.fetchPageSource(this.data.url, selector, val);
             this.pageData.set(data);
             this.priceMatches.set(data.price_matches ?? []);
-            setTimeout(() => this.injectInspectorScript(), 50);
         } catch {
             // Ignore errors — main loadPage handles that
         } finally {
@@ -327,33 +355,6 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
             }
         };
         window.addEventListener('message', this.messageHandler);
-    }
-
-    private injectInspectorScript() {
-        const iframe = this.previewFrame()?.nativeElement;
-        if (!iframe) return;
-
-        const iframeDoc = iframe.contentDocument ?? iframe.contentWindow?.document;
-        if (!iframeDoc) return;
-
-        const nonce = this.generateNonce();
-        const mode = this.data.interactionMode;
-        const selector = this.selectorInput().trim();
-
-        // Inject CSP meta tag
-        const csp = iframeDoc.createElement('meta');
-        csp.setAttribute('http-equiv', 'Content-Security-Policy');
-        csp.setAttribute(
-            'content',
-            `default-src 'none'; style-src 'unsafe-inline' * ; img-src * data:; font-src *; script-src 'nonce-${nonce}';`,
-        );
-        iframeDoc.head?.prepend(csp);
-
-        // Inject inspector script
-        const script = iframeDoc.createElement('script');
-        script.setAttribute('nonce', nonce);
-        script.textContent = this.buildInspectorScript(mode, selector);
-        iframeDoc.body?.appendChild(script);
     }
 
     private buildInspectorScript(mode: string, selector: string): string {

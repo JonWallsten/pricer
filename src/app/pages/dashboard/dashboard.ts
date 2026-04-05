@@ -58,7 +58,7 @@ export class Dashboard implements OnInit {
 
     formatPrice(price: number | null, currency: string): string {
         if (price === null) return '—';
-        return new Intl.NumberFormat('sv-SE', {
+        return new Intl.NumberFormat(this.i18n.locale(), {
             style: 'currency',
             currency: currency || 'SEK',
             minimumFractionDigits: 0,

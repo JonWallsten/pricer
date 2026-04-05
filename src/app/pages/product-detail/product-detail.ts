@@ -168,12 +168,16 @@ export class ProductDetail implements OnInit, OnDestroy {
         const labels = data.map((d) => d.recorded_at);
         const prices = data.map((d) => d.price);
 
-        const style = getComputedStyle(document.documentElement);
-        const primary = style.getPropertyValue('--mat-sys-primary').trim() || '#1976d2';
-        const text = style.getPropertyValue('--mat-sys-on-surface-variant').trim() || '#6b7280';
-        const grid = style.getPropertyValue('--mat-sys-outline-variant').trim() || '#d1d5db';
-        const primaryFill = this.withAlpha(primary, 0.16);
-        const pointRadius = data.length === 1 ? 6 : data.length > 30 ? 0 : 4;
+        const primary = this.resolveThemeColor('--mat-sys-primary', '#1976d2');
+        const text = this.resolveThemeColor('--mat-sys-on-surface-variant', '#6b7280');
+        const textStrong = this.resolveThemeColor('--mat-sys-on-surface', '#111827');
+        const grid = this.resolveThemeColor('--mat-sys-outline-variant', '#d1d5db');
+        const primaryFill = this.withAlpha(primary, 0.18);
+        const pointRadius = data.length === 1 ? 7 : data.length > 30 ? 0 : 4;
+        const pointHoverRadius = Math.max(pointRadius + 2, 7);
+        const suggestedMin = Math.min(...prices);
+        const suggestedMax = Math.max(...prices);
+        const span = Math.max(suggestedMax - suggestedMin, suggestedMax * 0.06, 10);
 
         this.chart = new Chart(ctx, {
             type: 'line',
@@ -186,13 +190,13 @@ export class ProductDetail implements OnInit, OnDestroy {
                         borderColor: primary,
                         backgroundColor: primaryFill,
                         fill: true,
-                        tension: 0.3,
+                        tension: data.length > 1 ? 0.28 : 0,
                         borderWidth: 3,
                         pointRadius,
-                        pointHoverRadius: Math.max(pointRadius + 2, 6),
+                        pointHoverRadius,
                         pointBackgroundColor: primary,
-                        pointBorderColor: primary,
-                        pointBorderWidth: 0,
+                        pointBorderColor: this.withAlpha(textStrong, 0.9),
+                        pointBorderWidth: data.length === 1 ? 3 : 2,
                         showLine: data.length > 1,
                     },
                 ],
@@ -207,8 +211,14 @@ export class ProductDetail implements OnInit, OnDestroy {
                         callbacks: {
                             label: (ctx) => {
                                 const val = ctx.parsed.y;
+                                if (val === null || val === undefined) return '';
                                 const currency = data[ctx.dataIndex]?.currency || 'SEK';
-                                return `${val} ${currency}`;
+                                return new Intl.NumberFormat(this.i18n.locale(), {
+                                    style: 'currency',
+                                    currency,
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 2,
+                                }).format(val);
                             },
                         },
                     },
@@ -218,24 +228,52 @@ export class ProductDetail implements OnInit, OnDestroy {
                         ticks: {
                             maxTicksLimit: 8,
                             color: text,
+                            padding: 10,
                         },
                         grid: { display: false },
                         border: { display: false },
                     },
                     y: {
                         beginAtZero: false,
+                        suggestedMin: suggestedMin - span * 0.45,
+                        suggestedMax: suggestedMax + span * 0.55,
                         ticks: {
                             color: text,
+                            padding: 10,
                             callback: (val) => `${val}`,
                         },
                         grid: {
-                            color: this.withAlpha(grid, 0.75),
+                            color: this.withAlpha(grid, 0.42),
                         },
                         border: { display: false },
                     },
                 },
             },
         });
+    }
+
+    private resolveThemeColor(variableName: string, fallback: string): string {
+        const style = getComputedStyle(document.documentElement);
+        const raw = style.getPropertyValue(variableName).trim();
+
+        if (raw === '') {
+            return fallback;
+        }
+
+        const lightDarkMatch = raw.match(/^light-dark\((.+),(.+)\)$/);
+        if (lightDarkMatch) {
+            const isDark = this.isDarkThemeActive();
+            return (isDark ? lightDarkMatch[2] : lightDarkMatch[1]).trim();
+        }
+
+        return raw;
+    }
+
+    private isDarkThemeActive(): boolean {
+        const theme = document.documentElement.dataset['theme'];
+        if (theme === 'dark') return true;
+        if (theme === 'light') return false;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
 
     private withAlpha(color: string, alpha: number): string {
@@ -385,9 +423,9 @@ export class ProductDetail implements OnInit, OnDestroy {
         }
     }
 
-    formatPrice(price: number | null, currency?: string): string {
+    formatPrice(price: number | null, currency?: string | null): string {
         if (price === null) return '—';
-        return new Intl.NumberFormat('sv-SE', {
+        return new Intl.NumberFormat(this.i18n.locale(), {
             style: 'currency',
             currency: currency || this.product()?.currency || 'SEK',
             minimumFractionDigits: 0,

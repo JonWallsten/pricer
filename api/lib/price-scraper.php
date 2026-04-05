@@ -2168,6 +2168,8 @@ function extractGenericScriptPrices(string $scriptContent): array
         foreach ($matches as $match) {
             $key = $match[1];
             $raw = trim($match[2], '"\'');
+            // Strip trailing commas/dots that are JSON delimiters, not decimals
+            $raw = rtrim($raw, ',.');
             $numericVal = parsePrice($raw);
             if ($numericVal !== null && $numericVal > 0 && $numericVal < 1000000) {
                 // Detect currency from the value string

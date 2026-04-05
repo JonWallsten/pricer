@@ -364,7 +364,7 @@ export class ProductForm implements OnInit, OnDestroy {
     }
 
     formatPrice(price: number, currency?: string | null): string {
-        return new Intl.NumberFormat('sv-SE', {
+        return new Intl.NumberFormat(this.i18n.locale(), {
             style: 'currency',
             currency: currency || 'SEK',
             minimumFractionDigits: 0,

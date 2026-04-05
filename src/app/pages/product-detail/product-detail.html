@@ -100,8 +100,8 @@
                     [class.test-result--error]="result.price === null"
                 >
                     @if (result.price !== null) {
-                        <strong>{{ i18n.strings().priceFound }}:</strong> {{ result.price }}
-                        {{ result.currency }}
+                        <strong>{{ i18n.strings().priceFound }}:</strong>
+                        {{ formatPrice(result.price, result.currency) }}
                         <br /><small
                             >{{ i18n.strings().extractionMethod }}: {{ result.method }}</small
                         >

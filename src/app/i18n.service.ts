@@ -620,6 +620,7 @@ const translations: Record<Lang, I18nStrings> = { en, sv };
 export class I18nService {
     readonly lang = signal<Lang>(this.detectLang());
     readonly strings = computed(() => translations[this.lang()]);
+    readonly locale = computed(() => (this.lang() === 'sv' ? 'sv-SE' : 'en-US'));
 
     setLang(lang: Lang) {
         this.lang.set(lang);

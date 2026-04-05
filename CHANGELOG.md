@@ -6,8 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Price parsing bug**: `extractGenericScriptPrices` regex greedily captured trailing JSON commas (e.g. `129.0,`) causing `parsePrice` to misinterpret `129.0` as European `1.290` → `1290`
+- **Page inspector cross-origin error**: inspector script is now injected into HTML before setting `srcdoc`, eliminating `contentDocument` access on the sandboxed iframe
+
 ### Added
 
+- **Locale-aware price formatting**: all price displays now use the app's current locale (sv-SE / en-US) for decimal separators and currency formatting, instead of hardcoded Swedish locale
 - **Domain pattern learning**: the system now learns which extraction methods and CSS selectors work per domain, stores them in a `domain_patterns` table, and auto-suggests known-working selectors when adding new URLs from recognized domains
 - New `GET /products/domain-pattern` API endpoint returns ranked patterns and best selector for a given URL's domain
 - Product form shows a suggestion banner with Apply/Dismiss when a known CSS selector exists for the domain
