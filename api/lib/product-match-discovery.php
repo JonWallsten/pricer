@@ -16,7 +16,16 @@ function listProductMatches(PDO $db, int $productId, bool $includeWeak = false):
     $stmt->execute([':pid' => $productId]);
     $rows = $stmt->fetchAll();
 
-    return array_map('castProductMatchCandidate', $rows);
+    // Deduplicate by domain — keep only the highest-scoring match per domain
+    $byDomain = [];
+    foreach ($rows as $row) {
+        $domain = $row['candidate_domain'] ?? '';
+        if (!isset($byDomain[$domain]) || (int) $row['confidence_score'] > (int) $byDomain[$domain]['confidence_score']) {
+            $byDomain[$domain] = $row;
+        }
+    }
+
+    return array_map('castProductMatchCandidate', array_values($byDomain));
 }
 
 function discoverProductMatches(PDO $db, array $product, bool $force = false): array
@@ -30,6 +39,7 @@ function discoverProductMatches(PDO $db, array $product, bool $force = false): a
 
     $matches = [];
     $searchesRun = 0;
+    $seenDomains = []; // domain → highest confidence score
 
     foreach ($queries as $query) {
         $results = searchSerpApiCached($db, $query, $force);
@@ -42,7 +52,19 @@ function discoverProductMatches(PDO $db, array $product, bool $force = false): a
                 continue;
             }
 
+            // Require a price — supplier/info pages without prices are not useful matches
+            if (($candidate['price'] ?? null) === null) {
+                continue;
+            }
+
             $score = scoreCandidateAgainstSource($source, $candidate);
+            $domain = $candidate['domain'] ?? '';
+
+            // One match per domain — keep only the highest-scoring
+            if (isset($seenDomains[$domain]) && $score['score'] <= $seenDomains[$domain]) {
+                continue;
+            }
+
             $persisted = persistProductMatchCandidate(
                 $db,
                 (int) $product['id'],
@@ -52,6 +74,7 @@ function discoverProductMatches(PDO $db, array $product, bool $force = false): a
                 $candidateResult['position'] ?? null,
             );
             $matches[$persisted['candidate_url']] = $persisted;
+            $seenDomains[$domain] = $score['score'];
         }
 
         if (!empty($matches)) {
@@ -401,9 +424,7 @@ function fetchHtmlWithMetadata(string $url, int $redirectDepth = 0): ?array
 function extractCandidateProductFromHtml(string $finalUrl, string $html): ?array
 {
     $doc = new DOMDocument();
-    $internalErrors = libxml_use_internal_errors(true);
-    $doc->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);
-    libxml_use_internal_errors($internalErrors);
+    loadHtmlUtf8($doc, $html);
     $xpath = new DOMXPath($doc);
 
     $title = extractPageTitleFromDoc($doc);
@@ -414,6 +435,18 @@ function extractCandidateProductFromHtml(string $finalUrl, string $html): ?array
     $meta = extractStructuredProductSignalsFromMeta($xpath);
     $fallback = extractStructuredProductSignalsFromDom($xpath);
 
+    $structuredPrice = $jsonLd['price'] ?? $meta['price'] ?? $fallback['price'] ?? null;
+    $structuredCurrency = $jsonLd['currency'] ?? $meta['currency'] ?? $fallback['currency'] ?? null;
+
+    // Fallback: try script patterns (WebComponents, __NEXT_DATA__, etc.) if structured data has no price
+    if ($structuredPrice === null) {
+        $scriptResult = extractFromScriptPatterns($doc, $html);
+        if (($scriptResult['price'] ?? null) !== null) {
+            $structuredPrice = $scriptResult['price'];
+            $structuredCurrency = $scriptResult['currency'] ?? $structuredCurrency;
+        }
+    }
+
     $raw = array_filter([
         'title' => $jsonLd['title'] ?? $meta['title'] ?? $fallback['title'] ?? $title,
         'brand' => $jsonLd['brand'] ?? $meta['brand'] ?? $fallback['brand'] ?? null,
@@ -421,8 +454,8 @@ function extractCandidateProductFromHtml(string $finalUrl, string $html): ?array
         'mpn' => $jsonLd['mpn'] ?? $meta['mpn'] ?? $fallback['mpn'] ?? null,
         'gtin' => $jsonLd['gtin'] ?? $meta['gtin'] ?? $fallback['gtin'] ?? null,
         'sku' => $jsonLd['sku'] ?? $meta['sku'] ?? $fallback['sku'] ?? null,
-        'price' => $jsonLd['price'] ?? $meta['price'] ?? $fallback['price'] ?? null,
-        'currency' => $jsonLd['currency'] ?? $meta['currency'] ?? $fallback['currency'] ?? null,
+        'price' => $structuredPrice,
+        'currency' => $structuredCurrency,
         'color' => $jsonLd['color'] ?? $meta['color'] ?? $fallback['color'] ?? null,
         'size' => $jsonLd['size'] ?? $meta['size'] ?? $fallback['size'] ?? null,
         'dimensions' => $jsonLd['dimensions'] ?? $meta['dimensions'] ?? $fallback['dimensions'] ?? [],

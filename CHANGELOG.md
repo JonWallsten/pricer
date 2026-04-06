@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+#### Changed
+
+- **Cross-store discovery quality**: matches now require an extractable price (priceless supplier/info pages are skipped), only one match per domain is kept (highest-scoring wins), and script-pattern extraction (WebComponents, **NEXT_DATA**, etc.) is used as a price fallback when structured data has no price
+
 ## [1.1.0] — 2026-04-05
 
 ### Fixed

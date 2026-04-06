@@ -68,16 +68,15 @@
                             }
                         }
                     </span>
-                    @if (prod.availability && prod.availability !== 'unknown') {
-                        <span
-                            class="badge"
-                            [class.badge--success]="prod.availability === 'in_stock'"
-                            [class.badge--error]="prod.availability === 'out_of_stock'"
-                            [class.badge--warning]="prod.availability === 'preorder'"
-                        >
-                            {{ getAvailabilityLabel(prod.availability) }}
-                        </span>
-                    }
+                    <span
+                        class="badge"
+                        [class.badge--success]="prod.availability === 'in_stock'"
+                        [class.badge--error]="prod.availability === 'out_of_stock'"
+                        [class.badge--warning]="prod.availability === 'preorder'"
+                        [class.badge--muted]="prod.availability === 'unknown'"
+                    >
+                        {{ getAvailabilityLabel(prod.availability) }}
+                    </span>
                 </div>
                 <span class="meta-timestamp">
                     @if (prod.last_checked_at) {
@@ -230,25 +229,23 @@
                                         <mat-icon class="site-link-icon">open_in_new</mat-icon>
                                     </a>
                                     <div class="site-meta">
-                                        @if (
-                                            siteUrl.availability &&
-                                            siteUrl.availability !== 'unknown'
-                                        ) {
-                                            <span
-                                                class="badge"
-                                                [class.badge--success]="
-                                                    siteUrl.availability === 'in_stock'
-                                                "
-                                                [class.badge--error]="
-                                                    siteUrl.availability === 'out_of_stock'
-                                                "
-                                                [class.badge--warning]="
-                                                    siteUrl.availability === 'preorder'
-                                                "
-                                            >
-                                                {{ getAvailabilityLabel(siteUrl.availability) }}
-                                            </span>
-                                        }
+                                        <span
+                                            class="badge"
+                                            [class.badge--success]="
+                                                siteUrl.availability === 'in_stock'
+                                            "
+                                            [class.badge--error]="
+                                                siteUrl.availability === 'out_of_stock'
+                                            "
+                                            [class.badge--warning]="
+                                                siteUrl.availability === 'preorder'
+                                            "
+                                            [class.badge--muted]="
+                                                siteUrl.availability === 'unknown'
+                                            "
+                                        >
+                                            {{ getAvailabilityLabel(siteUrl.availability) }}
+                                        </span>
                                         @if (siteUrl.last_check_status === 'error') {
                                             <span class="badge badge--error">{{
                                                 i18n.strings().statusError
@@ -412,25 +409,23 @@
                                                     getMatchConfidenceLabel(match.confidence_label)
                                                 }}
                                             </span>
-                                            @if (
-                                                match.availability &&
-                                                match.availability !== 'unknown'
-                                            ) {
-                                                <span
-                                                    class="badge"
-                                                    [class.badge--success]="
-                                                        match.availability === 'in_stock'
-                                                    "
-                                                    [class.badge--error]="
-                                                        match.availability === 'out_of_stock'
-                                                    "
-                                                    [class.badge--warning]="
-                                                        match.availability === 'preorder'
-                                                    "
-                                                >
-                                                    {{ getAvailabilityLabel(match.availability) }}
-                                                </span>
-                                            }
+                                            <span
+                                                class="badge"
+                                                [class.badge--success]="
+                                                    match.availability === 'in_stock'
+                                                "
+                                                [class.badge--error]="
+                                                    match.availability === 'out_of_stock'
+                                                "
+                                                [class.badge--warning]="
+                                                    match.availability === 'preorder'
+                                                "
+                                                [class.badge--muted]="
+                                                    match.availability === 'unknown'
+                                                "
+                                            >
+                                                {{ getAvailabilityLabel(match.availability) }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
