@@ -72,7 +72,11 @@ function isConfiguredAdminGoogleId(string $googleId): bool
 
 function getAuthCookiePath(): string
 {
-    // In production the app lives at /pricer/api/; in dev it's /
+    // Use configured API base path if available, otherwise detect from script name
+    if (defined('APP_API_BASE_PATH') && APP_API_BASE_PATH !== '') {
+        // Extract directory part so cookie is valid for all API endpoints
+        return rtrim(APP_API_BASE_PATH, '/') . '/';
+    }
     $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
     if (str_contains($scriptName, '/pricer/')) {
         return '/pricer/api/';

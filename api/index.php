@@ -11,8 +11,17 @@ require_once __DIR__ . '/middleware.php';
 // ─── CORS ─────────────────────────────────────────────────
 $allowedOrigins = [
     'http://localhost:4200',
-    'https://jonwallsten.com',
 ];
+if (APP_URL !== '') {
+    $allowedOrigins[] = preg_replace('#/[^/]+$#', '', APP_URL); // strip path, keep scheme+host
+    $allowedOrigins[] = rtrim(APP_URL, '/');
+    // Also allow just the origin (scheme+host without path)
+    $parsedAppUrl = parse_url(APP_URL);
+    if ($parsedAppUrl) {
+        $appOrigin = ($parsedAppUrl['scheme'] ?? 'https') . '://' . ($parsedAppUrl['host'] ?? '');
+        $allowedOrigins[] = $appOrigin;
+    }
+}
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowedOrigins, true)) {
     header("Access-Control-Allow-Origin: $origin");
@@ -43,7 +52,7 @@ function getJsonBody(): array
 }
 
 // ─── Parse route ──────────────────────────────────────────
-$basePath = '/pricer/api';
+$basePath = APP_API_BASE_PATH;
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = substr($requestUri, strlen($basePath)) ?: '/';
 $path = '/' . trim($path, '/');

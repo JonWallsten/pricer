@@ -55,6 +55,12 @@ define('SERPAPI_API_KEY', $_ENV['SERPAPI_API_KEY'] ?? '');
 define('SERPAPI_SEARCH_COUNTRY', $_ENV['SERPAPI_SEARCH_COUNTRY'] ?? 'se');
 define('SERPAPI_SEARCH_LOCALE', $_ENV['SERPAPI_SEARCH_LOCALE'] ?? 'sv-se');
 
+// ─── App deployment config ─────────────────────────────────
+// APP_URL: public base URL of the app, no trailing slash (e.g. https://example.com/pricer)
+// APP_API_BASE_PATH: URL path prefix for the API (e.g. /pricer/api)
+define('APP_URL', $_ENV['APP_URL'] ?? '');
+define('APP_API_BASE_PATH', $_ENV['APP_API_BASE_PATH'] ?? '/pricer/api');
+
 // ─── Validate critical secrets ────────────────────────────
 if (JWT_SECRET === '') {
     throw new RuntimeException('JWT_SECRET is not set. Check .credentials.env.');

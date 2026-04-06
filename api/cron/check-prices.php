@@ -209,7 +209,8 @@ foreach ($productsToSync as $productId => $info) {
                     $info['product_name'],
                     $best['url'],
                     $currentPrice,
-                    $currency
+                    $currency,
+                    $productId
                 );
                 echo $sent ? "sent.\n" : "FAILED.\n";
                 if ($sent) $notified++;
@@ -232,8 +233,9 @@ foreach ($productsToSync as $productId => $info) {
         foreach ($alerts as $alert) {
             $targetPrice = (float) $alert['target_price'];
 
-            // If alert requires in-stock and product is out of stock, defer notification
-            if (!empty($alert['notify_back_in_stock']) && $bestAvail !== 'in_stock') {
+            // If alert requires in-stock and product is explicitly out of stock, defer notification
+            // (unknown availability is allowed through — only defer when we know it's out of stock)
+            if (!empty($alert['notify_back_in_stock']) && $bestAvail === 'out_of_stock') {
                 echo "    → Alert target met but out of stock, deferring (target: $targetPrice).\n";
                 continue;
             }
@@ -246,7 +248,8 @@ foreach ($productsToSync as $productId => $info) {
                 $currentPrice,
                 $targetPrice,
                 $best['url'],
-                $currency
+                $currency,
+                $productId
             );
 
             if ($sent) {

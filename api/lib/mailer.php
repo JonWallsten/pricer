@@ -15,17 +15,21 @@ function sendNotification(
     float  $currentPrice,
     float  $targetPrice,
     string $productUrl,
-    string $currency = 'SEK'
+    string $currency = 'SEK',
+    ?int   $productId = null
 ): bool {
     $subject = "Prisbevakning: $productName har nått ditt mål!";
 
     $formattedCurrent = number_format($currentPrice, 2, ',', ' ') . " $currency";
     $formattedTarget = number_format($targetPrice, 2, ',', ' ') . " $currency";
+    $pricerUrl = $productId !== null && defined('APP_URL') && APP_URL !== ''
+        ? APP_URL . '/#/products/' . $productId
+        : null;
 
-    $html = buildEmailHtml($productName, $formattedCurrent, $formattedTarget, $productUrl);
-    $plain = buildEmailPlain($productName, $formattedCurrent, $formattedTarget, $productUrl);
+    $html = buildEmailHtml($productName, $formattedCurrent, $formattedTarget, $productUrl, $pricerUrl);
+    $plain = buildEmailPlain($productName, $formattedCurrent, $formattedTarget, $productUrl, $pricerUrl);
 
-    $fromEmail = defined('NOTIFICATION_FROM_EMAIL') ? NOTIFICATION_FROM_EMAIL : 'noreply@jonwallsten.com';
+    $fromEmail = defined('NOTIFICATION_FROM_EMAIL') && NOTIFICATION_FROM_EMAIL !== '' ? NOTIFICATION_FROM_EMAIL : 'noreply@example.com';
     $fromName = 'Pricer';
 
     // Try SMTP first if credentials are configured
@@ -202,18 +206,22 @@ function sendBackInStockNotification(
     string $productName,
     string $productUrl,
     ?float $currentPrice = null,
-    string $currency = 'SEK'
+    string $currency = 'SEK',
+    ?int   $productId = null
 ): bool {
     $subject = "Åter i lager: $productName";
 
     $priceStr = $currentPrice !== null
         ? number_format($currentPrice, 2, ',', ' ') . " $currency"
         : null;
+    $pricerUrl = $productId !== null && defined('APP_URL') && APP_URL !== ''
+        ? APP_URL . '/#/products/' . $productId
+        : null;
 
-    $html = buildBackInStockHtml($productName, $productUrl, $priceStr);
-    $plain = buildBackInStockPlain($productName, $productUrl, $priceStr);
+    $html = buildBackInStockHtml($productName, $productUrl, $priceStr, $pricerUrl);
+    $plain = buildBackInStockPlain($productName, $productUrl, $priceStr, $pricerUrl);
 
-    $fromEmail = defined('NOTIFICATION_FROM_EMAIL') ? NOTIFICATION_FROM_EMAIL : 'noreply@jonwallsten.com';
+    $fromEmail = defined('NOTIFICATION_FROM_EMAIL') && NOTIFICATION_FROM_EMAIL !== '' ? NOTIFICATION_FROM_EMAIL : 'noreply@example.com';
     $fromName = 'Pricer';
 
     if (defined('SMTP_HOST') && SMTP_HOST !== '') {
@@ -225,12 +233,15 @@ function sendBackInStockNotification(
 
 // ─── Email templates ──────────────────────────────────────
 
-function buildBackInStockHtml(string $productName, string $productUrl, ?string $price): string
+function buildBackInStockHtml(string $productName, string $productUrl, ?string $price, ?string $pricerUrl = null): string
 {
     $name = htmlspecialchars($productName, ENT_QUOTES, 'UTF-8');
     $url = htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8');
     $priceRow = $price !== null
         ? "<tr><td style=\"padding:8px 0;color:#666;\">Nuvarande pris</td><td style=\"padding:8px 0;text-align:right;font-size:20px;font-weight:bold;color:#2e7d32;\">$price</td></tr>"
+        : '';
+    $pricerLink = $pricerUrl !== null
+        ? '<a href="' . htmlspecialchars($pricerUrl, ENT_QUOTES, 'UTF-8') . '" style="display:block;text-align:center;background:#666;color:#fff;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:12px;">Öppna i Pricer →</a>'
         : '';
 
     return <<<HTML
@@ -248,11 +259,12 @@ function buildBackInStockHtml(string $productName, string $productUrl, ?string $
       </p>
       <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">{$priceRow}</table>
       <a href="{$url}" style="display:block;text-align:center;background:#2e7d32;color:#fff;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
-        Se produkten →
+        Gå till butiken →
       </a>
+      {$pricerLink}
     </div>
     <div style="padding:16px 24px;background:#f9f9f9;text-align:center;font-size:12px;color:#999;">
-      Skickat av Pricer — pristracker på jonwallsten.com/pricer
+      Skickat av Pricer
     </div>
   </div>
 </body>
@@ -260,18 +272,19 @@ function buildBackInStockHtml(string $productName, string $productUrl, ?string $
 HTML;
 }
 
-function buildBackInStockPlain(string $productName, string $productUrl, ?string $price): string
+function buildBackInStockPlain(string $productName, string $productUrl, ?string $price, ?string $pricerUrl = null): string
 {
     $priceStr = $price !== null ? "\nNuvarande pris: $price\n" : '';
+    $pricerStr = $pricerUrl !== null ? "\nÖppna i Pricer: $pricerUrl\n" : '';
     return <<<PLAIN
 Åter i lager: {$productName}
 
 {$productName} finns åter i lager!{$priceStr}
 
-Se produkten: {$productUrl}
+Gå till butiken: {$productUrl}{$pricerStr}
 
 —
-Pricer — jonwallsten.com/pricer
+Pricer
 PLAIN;
 }
 
@@ -279,12 +292,16 @@ function buildEmailHtml(
     string $productName,
     string $currentPrice,
     string $targetPrice,
-    string $productUrl
+    string $productUrl,
+    ?string $pricerUrl = null
 ): string {
     $name = htmlspecialchars($productName, ENT_QUOTES, 'UTF-8');
     $price = htmlspecialchars($currentPrice, ENT_QUOTES, 'UTF-8');
     $target = htmlspecialchars($targetPrice, ENT_QUOTES, 'UTF-8');
     $url = htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8');
+    $pricerLink = $pricerUrl !== null
+        ? '<a href="' . htmlspecialchars($pricerUrl, ENT_QUOTES, 'UTF-8') . '" style="display:block;text-align:center;background:#666;color:#fff;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:12px;">Öppna i Pricer →</a>'
+        : '';
 
     return <<<HTML
 <!DOCTYPE html>
@@ -310,11 +327,12 @@ function buildEmailHtml(
         </tr>
       </table>
       <a href="{$url}" style="display:block;text-align:center;background:#1976d2;color:#fff;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
-        Se produkten →
+        Gå till butiken →
       </a>
+      {$pricerLink}
     </div>
     <div style="padding:16px 24px;background:#f9f9f9;text-align:center;font-size:12px;color:#999;">
-      Skickat av Pricer — pristracker på jonwallsten.com/pricer
+      Skickat av Pricer
     </div>
   </div>
 </body>
@@ -326,17 +344,19 @@ function buildEmailPlain(
     string $productName,
     string $currentPrice,
     string $targetPrice,
-    string $productUrl
+    string $productUrl,
+    ?string $pricerUrl = null
 ): string {
+    $pricerStr = $pricerUrl !== null ? "\nÖppna i Pricer: $pricerUrl\n" : '';
     return <<<PLAIN
 Prisbevakning: {$productName}
 
 Nuvarande pris: {$currentPrice}
 Ditt mål: {$targetPrice}
 
-Se produkten: {$productUrl}
+Gå till butiken: {$productUrl}{$pricerStr}
 
 —
-Pricer — jonwallsten.com/pricer
+Pricer
 PLAIN;
 }

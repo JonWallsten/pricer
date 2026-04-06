@@ -16,7 +16,8 @@ if ($uri !== '/' && file_exists($file) && is_file($file)) {
     return false; // let PHP's built-in server handle it
 }
 
-// Rewrite: prepend /pricer/api so index.php's basePath stripping works
-$_SERVER['REQUEST_URI'] = '/pricer/api' . $_SERVER['REQUEST_URI'];
+// Rewrite: prepend API base path so index.php's basePath stripping works
+$apiBasePath = $_ENV['APP_API_BASE_PATH'] ?? '/pricer/api';
+$_SERVER['REQUEST_URI'] = $apiBasePath . $_SERVER['REQUEST_URI'];
 
 require __DIR__ . '/index.php';
