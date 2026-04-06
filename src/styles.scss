@@ -73,3 +73,12 @@
         padding: var(--app-badge-padding-mobile);
     }
 }
+
+// Spinner inside Material buttons must be inline-flex so it sits beside the label
+[mat-flat-button],
+[mat-stroked-button],
+[mat-button] {
+    mat-spinner {
+        display: inline-flex;
+    }
+}

@@ -89,7 +89,7 @@
             </div>
 
             @if (prod.last_check_error) {
-                <div class="check-error">{{ prod.last_check_error }}</div>
+                <div class="check-error">{{ getFriendlyFetchError(prod.last_check_error) }}</div>
             }
 
             @if (checkResult(); as result) {
@@ -107,7 +107,7 @@
                     } @else {
                         <strong>{{ i18n.strings().priceNotFound }}</strong>
                         @if (result.error) {
-                            <br /><small>{{ result.error }}</small>
+                            <br /><small>{{ getFriendlyFetchError(result.error) }}</small>
                         }
                     }
                 </div>
@@ -298,6 +298,10 @@
                                         <mat-icon>refresh</mat-icon>
                                         <span>{{ i18n.strings().checkNow }}</span>
                                     </button>
+                                    <button mat-menu-item (click)="pickSelectorForUrl(siteUrl)">
+                                        <mat-icon>css</mat-icon>
+                                        <span>{{ i18n.strings().pickSelector }}</span>
+                                    </button>
                                     <button mat-menu-item (click)="debugUrl(siteUrl)">
                                         <mat-icon>bug_report</mat-icon>
                                         <span>{{ i18n.strings().debugExtraction }}</span>
@@ -317,7 +321,9 @@
                             @if (
                                 siteUrl.last_check_status === 'error' && siteUrl.last_check_error
                             ) {
-                                <div class="site-error">{{ siteUrl.last_check_error }}</div>
+                                <div class="site-error">
+                                    {{ getFriendlyFetchError(siteUrl.last_check_error) }}
+                                </div>
                             }
                         </div>
                     }
@@ -351,6 +357,82 @@
                 <div class="check-error">{{ matchesError() }}</div>
             }
 
+            @if (auth.debugMode() && lastDiscoveryResult(); as dr) {
+                <div class="debug-panel">
+                    <div class="debug-section">
+                        <h4>{{ i18n.strings().debugQueries }}</h4>
+                        <div class="debug-queries">
+                            @for (q of dr.queries; track q) {
+                                <div class="debug-query-row">
+                                    <code class="debug-query">{{ q }}</code>
+                                    <button
+                                        class="debug-copy-btn"
+                                        type="button"
+                                        [attr.aria-label]="i18n.strings().debugCopyQuery"
+                                        [title]="i18n.strings().debugCopyQuery"
+                                        (click)="copyToClipboard(q)"
+                                    >
+                                        <mat-icon>content_copy</mat-icon>
+                                    </button>
+                                </div>
+                            }
+                            <span class="debug-detail"
+                                >{{ i18n.strings().debugSearchesRun }}: {{ dr.searches_run }}</span
+                            >
+                        </div>
+                    </div>
+                    @if (dr.source; as src) {
+                        <div class="debug-section">
+                            <h4>{{ i18n.strings().debugSource }}</h4>
+                            <div class="debug-grid">
+                                @if (src['titleNormalized']) {
+                                    <span class="debug-label">Title</span>
+                                    <span class="debug-value">{{ src['titleNormalized'] }}</span>
+                                }
+                                @if (src['brand']) {
+                                    <span class="debug-label">Brand</span>
+                                    <span class="debug-value">{{ src['brand'] }}</span>
+                                }
+                                @if (src['model']) {
+                                    <span class="debug-label">Model</span>
+                                    <span class="debug-value">{{ src['model'] }}</span>
+                                }
+                                @if (src['mpn']) {
+                                    <span class="debug-label">MPN</span>
+                                    <span class="debug-value">{{ src['mpn'] }}</span>
+                                }
+                                @if (src['gtin']) {
+                                    <span class="debug-label">GTIN</span>
+                                    <span class="debug-value">{{ src['gtin'] }}</span>
+                                }
+                                @if (src['sku']) {
+                                    <span class="debug-label">SKU</span>
+                                    <span class="debug-value">{{ src['sku'] }}</span>
+                                }
+                                @if (src['color']) {
+                                    <span class="debug-label">Color</span>
+                                    <span class="debug-value">{{ src['color'] }}</span>
+                                }
+                                @if (src['size']) {
+                                    <span class="debug-label">Size</span>
+                                    <span class="debug-value">{{ src['size'] }}</span>
+                                }
+                            </div>
+                            @if (src['tokens']) {
+                                <div class="debug-tokens">
+                                    <span class="debug-label">{{
+                                        i18n.strings().debugTokens
+                                    }}</span>
+                                    @for (token of $any(src['tokens']); track token) {
+                                        <code class="debug-token">{{ token }}</code>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
             @if (matchesLoading()) {
                 <div class="chart-placeholder">
                     <mat-spinner diameter="24"></mat-spinner>
@@ -365,6 +447,14 @@
                 <div class="match-list">
                     @for (match of filteredMatches(); track match.id) {
                         <div class="match-item">
+                            <button
+                                class="match-dismiss-btn"
+                                [attr.aria-label]="i18n.strings().dismissMatch"
+                                [title]="i18n.strings().dismissMatch"
+                                (click)="dismissMatch(match)"
+                            >
+                                <mat-icon>close</mat-icon>
+                            </button>
                             <div class="match-top">
                                 <div class="match-main">
                                     @if (match.image_url) {
@@ -453,6 +543,9 @@
                                     </button>
                                 </div>
                             </div>
+                            @if (match.reasons.length > 0 || match.query_used) {
+                                <mat-divider></mat-divider>
+                            }
                             @if (match.reasons.length > 0) {
                                 <div class="match-reasons">
                                     <strong>{{ i18n.strings().matchReasons }}:</strong>
@@ -471,6 +564,136 @@
                                     {{ match.last_searched_at | timeAgo: i18n.strings() }}
                                 </span>
                             </div>
+                            @if (auth.debugMode()) {
+                                <div class="debug-match-detail">
+                                    <div class="debug-section">
+                                        <h5>{{ i18n.strings().debugBreakdown }}</h5>
+                                        <div class="debug-grid debug-grid--compact">
+                                            @if (match.breakdown.titleSimilarity != null) {
+                                                <span class="debug-label">Title similarity</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.titleSimilarity
+                                                }}</span>
+                                            }
+                                            @if (match.breakdown.brandMatch != null) {
+                                                <span class="debug-label">Brand</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.brandMatch
+                                                }}</span>
+                                            }
+                                            @if (match.breakdown.modelMatch != null) {
+                                                <span class="debug-label">Model</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.modelMatch
+                                                }}</span>
+                                            }
+                                            @if (match.breakdown.gtinMatch != null) {
+                                                <span class="debug-label">GTIN</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.gtinMatch
+                                                }}</span>
+                                            }
+                                            @if (match.breakdown.mpnMatch != null) {
+                                                <span class="debug-label">MPN</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.mpnMatch
+                                                }}</span>
+                                            }
+                                            @if (match.breakdown.skuMatch != null) {
+                                                <span class="debug-label">SKU</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.skuMatch
+                                                }}</span>
+                                            }
+                                            @if (match.breakdown.colorMatch != null) {
+                                                <span class="debug-label">Color</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.colorMatch
+                                                }}</span>
+                                            }
+                                            @if (match.breakdown.dimensionsMatch != null) {
+                                                <span class="debug-label">Dimensions</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.dimensionsMatch
+                                                }}</span>
+                                            }
+                                            @if (match.breakdown.categoryMatch != null) {
+                                                <span class="debug-label">Category</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.categoryMatch
+                                                }}</span>
+                                            }
+                                            @if (match.breakdown.priceProximity != null) {
+                                                <span class="debug-label">Price proximity</span>
+                                                <span class="debug-value">{{
+                                                    match.breakdown.priceProximity
+                                                }}</span>
+                                            }
+                                            @if (match.serp_position != null) {
+                                                <span class="debug-label">{{
+                                                    i18n.strings().debugSerpPosition
+                                                }}</span>
+                                                <span class="debug-value"
+                                                    >#{{ match.serp_position }}</span
+                                                >
+                                            }
+                                        </div>
+                                        @if (match.breakdown.penalties?.length) {
+                                            <div class="debug-penalties">
+                                                Penalties:
+                                                {{ match.breakdown.penalties?.join(', ') }}
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="debug-section">
+                                        <h5>{{ i18n.strings().debugIdentifiers }}</h5>
+                                        <div class="debug-grid debug-grid--compact">
+                                            @if (match.extracted_brand) {
+                                                <span class="debug-label">Brand</span>
+                                                <span class="debug-value">{{
+                                                    match.extracted_brand
+                                                }}</span>
+                                            }
+                                            @if (match.extracted_model) {
+                                                <span class="debug-label">Model</span>
+                                                <span class="debug-value">{{
+                                                    match.extracted_model
+                                                }}</span>
+                                            }
+                                            @if (match.extracted_mpn) {
+                                                <span class="debug-label">MPN</span>
+                                                <span class="debug-value">{{
+                                                    match.extracted_mpn
+                                                }}</span>
+                                            }
+                                            @if (match.extracted_gtin) {
+                                                <span class="debug-label">GTIN</span>
+                                                <span class="debug-value">{{
+                                                    match.extracted_gtin
+                                                }}</span>
+                                            }
+                                            @if (match.extracted_sku) {
+                                                <span class="debug-label">SKU</span>
+                                                <span class="debug-value">{{
+                                                    match.extracted_sku
+                                                }}</span>
+                                            }
+                                            @if (match.extracted_color) {
+                                                <span class="debug-label">Color</span>
+                                                <span class="debug-value">{{
+                                                    match.extracted_color
+                                                }}</span>
+                                            }
+                                            @if (match.extracted_size) {
+                                                <span class="debug-label">Size</span>
+                                                <span class="debug-value">{{
+                                                    match.extracted_size
+                                                }}</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     }
                 </div>

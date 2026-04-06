@@ -6,9 +6,9 @@ require_once __DIR__ . '/price-scraper.php';
 
 function listProductMatches(PDO $db, int $productId, bool $includeWeak = false): array
 {
-    $sql = 'SELECT * FROM product_match_candidates WHERE source_product_id = :pid';
+    $sql = 'SELECT * FROM product_match_candidates WHERE source_product_id = :pid AND excluded = 0';
     if (!$includeWeak) {
-        $sql .= " AND excluded = 0 AND confidence_score >= 50";
+        $sql .= ' AND confidence_score >= 50';
     }
     $sql .= ' ORDER BY (candidate_price IS NOT NULL) DESC, confidence_score DESC, last_searched_at DESC, id ASC';
 
@@ -42,18 +42,26 @@ function discoverProductMatches(PDO $db, array $product, bool $force = false): a
     $seenDomains = []; // domain → highest confidence score
 
     foreach ($queries as $query) {
-        $results = searchSerpApiCached($db, $query, $force);
+        try {
+            $results = searchSerpApiCached($db, $query, $force);
+        } catch (RuntimeException $e) {
+            error_log('Search query failed: ' . $e->getMessage() . ' — query: ' . $query);
+            continue;
+        }
         $searchesRun++;
 
         $candidates = filterCandidateSearchResults($results, $source['sourceDomain'] ?? null);
-        foreach (array_slice($candidates, 0, 5) as $candidateResult) {
+        foreach (array_slice($candidates, 0, 8) as $candidateResult) {
             $candidate = fetchAndExtractCandidateProductCached($db, $candidateResult['url'], $force);
             if ($candidate === null || ($candidate['title'] ?? '') === '') {
                 continue;
             }
 
-            // Require a price — supplier/info pages without prices are not useful matches
-            if (($candidate['price'] ?? null) === null) {
+            // Skip non-shop pages (manufacturer/supplier/info) — require at least one commerce signal
+            $hasPrice = ($candidate['price'] ?? null) !== null;
+            $hasAvailability = !empty($candidate['availability']) && $candidate['availability'] !== 'unknown';
+            $hasSku = !empty($candidate['sku']);
+            if (!$hasPrice && !$hasAvailability && !$hasSku) {
                 continue;
             }
 
@@ -77,9 +85,10 @@ function discoverProductMatches(PDO $db, array $product, bool $force = false): a
             $seenDomains[$domain] = $score['score'];
         }
 
+        // Skip fallback query if first query found strong matches
         if (!empty($matches)) {
             $strongMatches = array_filter($matches, static fn(array $m) => $m['confidence_score'] >= 70);
-            if (!empty($strongMatches)) {
+            if (count($strongMatches) >= 3) {
                 break;
             }
         }
@@ -145,17 +154,17 @@ function buildSearchQueries(array $source): array
     }
 
     $primary = trim(implode(' ', array_slice($strongParts, 0, 6)));
-    $fallback = trim('"' . ($source['titleNormalized'] ?? '') . '"');
+    $fallback = trim((string) ($source['titleNormalized'] ?? ''));
     if (!empty($source['sourceDomain'])) {
         $fallback .= ' -site:' . $source['sourceDomain'];
     }
 
     $queries = [];
     if ($primary !== '') {
-        $queries[] = $primary;
+        $queries[] = 'köp ' . $primary . ' pris';
     }
     if ($fallback !== '' && !in_array($fallback, $queries, true)) {
-        $queries[] = $fallback;
+        $queries[] = 'köp ' . $fallback . ' pris';
     }
 
     return array_slice($queries, 0, 2);
@@ -185,7 +194,7 @@ function searchSerpApiCached(PDO $db, string $query, bool $force = false): array
         'google_domain' => 'google.se',
         'gl' => SERPAPI_SEARCH_COUNTRY,
         'hl' => substr(SERPAPI_SEARCH_LOCALE, 0, 2),
-        'num' => 10,
+        'num' => SERPAPI_NUM_RESULTS,
     ]);
 
     $response = fetchJsonUrl($url);
@@ -939,8 +948,7 @@ function persistProductMatchCandidate(
            query_used = VALUES(query_used),
            serp_position = VALUES(serp_position),
            last_searched_at = NOW(),
-           last_fetched_at = NOW(),
-           excluded = VALUES(excluded)'
+           last_fetched_at = NOW()'
     );
     $stmt->execute([
         ':source_product_id' => $productId,
@@ -966,7 +974,7 @@ function persistProductMatchCandidate(
         ':availability' => $candidate['availability'] ?? 'unknown',
         ':query_used' => $queryUsed,
         ':serp_position' => $serpPosition,
-        ':excluded' => $score['score'] < 50 ? 1 : 0,
+        ':excluded' => 0,
     ]);
 
     $select = $db->prepare('SELECT * FROM product_match_candidates WHERE source_product_id = :pid AND candidate_url_hash = :hash');

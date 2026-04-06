@@ -24,7 +24,11 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
+import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../api.service';
+import { AuthService } from '../../auth.service';
+import { classifyFetchError } from '../../fetch-error.util';
 import { I18nService } from '../../i18n.service';
 import {
     Product,
@@ -33,7 +37,9 @@ import {
     ExtractionResult,
     PriceHistoryEntry,
     ProductMatchCandidate,
+    ProductMatchDiscoveryResponse,
     PageInspectorData,
+    ExtractionStrategy,
 } from '../../models';
 import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
 import { Chart, registerables } from 'chart.js';
@@ -57,6 +63,7 @@ Chart.register(...registerables);
         MatCheckboxModule,
         MatSelectModule,
         MatMenuModule,
+        MatDividerModule,
         TimeAgoPipe,
     ],
 })
@@ -65,6 +72,7 @@ export class ProductDetail implements OnInit, OnDestroy {
     private readonly router = inject(Router);
     private readonly fb = inject(FormBuilder);
     private readonly dialog = inject(MatDialog);
+    protected readonly auth = inject(AuthService);
     protected readonly i18n = inject(I18nService);
 
     readonly id = input.required<string>();
@@ -85,6 +93,7 @@ export class ProductDetail implements OnInit, OnDestroy {
     protected readonly discoveringMatches = signal(false);
     protected readonly matchesError = signal<string | null>(null);
     protected readonly addingMatchUrls = signal<Set<string>>(new Set());
+    protected readonly lastDiscoveryResult = signal<ProductMatchDiscoveryResponse | null>(null);
     protected readonly trackedUrls = computed(() => new Set(this.urls().map((u) => u.url)));
     protected readonly filteredMatches = computed(() =>
         this.matches().filter((m) => !this.trackedUrls().has(m.candidate_url)),
@@ -379,12 +388,22 @@ export class ProductDetail implements OnInit, OnDestroy {
         try {
             const result = await this.api.discoverProductMatches(Number(this.id()), force);
             this.matches.set(result.matches);
+            this.lastDiscoveryResult.set(result);
         } catch (error) {
             this.matchesError.set(
                 error instanceof Error ? error.message : this.i18n.strings().error,
             );
         } finally {
             this.discoveringMatches.set(false);
+        }
+    }
+
+    async dismissMatch(match: ProductMatchCandidate) {
+        try {
+            await this.api.dismissProductMatch(Number(this.id()), match.id);
+            this.matches.update((list) => list.filter((m) => m.id !== match.id));
+        } catch {
+            // Non-critical — silently fail
         }
     }
 
@@ -396,6 +415,11 @@ export class ProductDetail implements OnInit, OnDestroy {
         try {
             const newUrl = await this.api.addProductUrl(Number(this.id()), url);
             this.urls.update((list) => [...list, newUrl]);
+
+            // Auto-open selector picker only when price extraction failed
+            if (newUrl.current_price === null) {
+                await this.runSelectorFlow(newUrl);
+            }
         } catch {
             // Error — silently fail, button will revert
         } finally {
@@ -405,6 +429,57 @@ export class ProductDetail implements OnInit, OnDestroy {
                 return next;
             });
         }
+    }
+
+    async pickSelectorForUrl(siteUrl: ProductUrl) {
+        await this.runSelectorFlow(siteUrl);
+    }
+
+    private async runSelectorFlow(siteUrl: ProductUrl) {
+        const selector = await this.openSelectorPicker(siteUrl.url, siteUrl.css_selector);
+        if (selector) {
+            const strategy = await this.openSelectorConfirm(selector);
+            if (strategy) {
+                const updatedUrl = await this.api.updateProductUrl(Number(this.id()), siteUrl.id, {
+                    css_selector: selector,
+                    extraction_strategy: strategy,
+                });
+                this.urls.update((list) =>
+                    list.map((u) => (u.id === updatedUrl.id ? updatedUrl : u)),
+                );
+                await this.checkSingleUrl(siteUrl.id);
+            }
+        }
+    }
+
+    private async openSelectorPicker(
+        url: string,
+        cssSelector?: string | null,
+    ): Promise<string | null> {
+        const { PageInspectorDialog } =
+            await import('../../components/page-inspector-dialog/page-inspector-dialog');
+        const dialogRef = this.dialog.open(PageInspectorDialog, {
+            width: '95vw',
+            maxWidth: '1400px',
+            height: '85vh',
+            panelClass: 'page-inspector-panel',
+            data: {
+                interactionMode: 'pick',
+                url,
+                cssSelector: cssSelector ?? undefined,
+            } satisfies PageInspectorData,
+        });
+        return firstValueFrom(dialogRef.afterClosed());
+    }
+
+    private async openSelectorConfirm(selector: string): Promise<ExtractionStrategy | null> {
+        const { SelectorConfirmDialog } =
+            await import('../../components/selector-confirm-dialog/selector-confirm-dialog');
+        const dialogRef = this.dialog.open(SelectorConfirmDialog, {
+            width: '400px',
+            data: { selector },
+        });
+        return firstValueFrom(dialogRef.afterClosed());
     }
 
     getDomain(url: string): string {
@@ -486,6 +561,22 @@ export class ProductDetail implements OnInit, OnDestroy {
         }).format(price);
     }
 
+    getFriendlyFetchError(error: string | null | undefined): string {
+        const s = this.i18n.strings();
+        switch (classifyFetchError(error)) {
+            case 'cloudflare':
+                return s.siteBlockedByCloudflare;
+            case 'blocked':
+                return s.siteBlockedByStore;
+            case 'rate_limited':
+                return s.siteRateLimited;
+            case 'fetch_failed':
+                return s.siteFetchFailed;
+            default:
+                return error || s.error;
+        }
+    }
+
     getAvailabilityLabel(avail: string): string {
         const s = this.i18n.strings();
         switch (avail) {
@@ -528,6 +619,10 @@ export class ProductDetail implements OnInit, OnDestroy {
                 cssSelector: url.css_selector ?? undefined,
             } satisfies PageInspectorData,
         });
+    }
+
+    copyToClipboard(text: string) {
+        navigator.clipboard.writeText(text);
     }
 
     goBack() {

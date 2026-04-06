@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from './auth.service';
+import { ApiService } from './api.service';
 import { I18nService } from './i18n.service';
 
 @Component({
@@ -26,12 +27,28 @@ import { I18nService } from './i18n.service';
 export class App implements OnInit {
     protected readonly auth = inject(AuthService);
     protected readonly i18n = inject(I18nService);
+    private readonly api = inject(ApiService);
+
+    readonly pendingCount = signal(0);
 
     private readonly prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
     readonly theme = signal<'light' | 'dark' | 'system'>(this.initTheme());
 
     ngOnInit() {
-        this.auth.init();
+        this.auth.init().then(() => {
+            if (this.auth.user()?.is_admin) {
+                this.refreshPendingCount();
+            }
+        });
+    }
+
+    async refreshPendingCount() {
+        try {
+            const users = await this.api.getUsers();
+            this.pendingCount.set(users.filter((u) => !u.is_approved).length);
+        } catch {
+            // Non-critical — ignore
+        }
     }
 
     themeIcon(): string {

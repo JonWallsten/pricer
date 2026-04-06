@@ -75,7 +75,9 @@
                                             {{ i18n.strings().autoDetected }}</span
                                         >
                                     } @else if (prev.error) {
-                                        <span class="preview-error">{{ prev.error }}</span>
+                                        <span class="preview-error">{{
+                                            getFriendlyFetchError(prev.error)
+                                        }}</span>
                                     }
                                     @if (prev.availability && prev.availability !== 'unknown') {
                                         <span

@@ -189,6 +189,14 @@ export class ApiService {
         return await res.json();
     }
 
+    async dismissProductMatch(productId: number, matchId: number): Promise<void> {
+        const res = await fetch(`api/products/${productId}/matches/${matchId}`, {
+            method: 'PATCH',
+            credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Failed to dismiss match');
+    }
+
     async addProductUrl(productId: number, url: string): Promise<ProductUrl> {
         const res = await fetch(`api/products/${productId}/add-url`, {
             method: 'POST',
@@ -213,6 +221,25 @@ export class ApiService {
             const err = await res.json().catch(() => ({}));
             throw new Error(err.error || 'Failed to remove URL');
         }
+    }
+
+    async updateProductUrl(
+        productId: number,
+        urlId: number,
+        body: { css_selector?: string | null; extraction_strategy?: string },
+    ): Promise<ProductUrl> {
+        const res = await fetch(`api/products/${productId}/urls/${urlId}`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to update URL');
+        }
+        const data = await res.json();
+        return data.url;
     }
 
     // ─── Alerts ───────────────────────────────────────────

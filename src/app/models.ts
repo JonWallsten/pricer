@@ -156,6 +156,7 @@ export interface ProductMatchCandidate {
 }
 
 export interface ProductMatchDiscoveryResponse {
+    source?: Record<string, unknown>;
     queries: string[];
     searches_run: number;
     matches: ProductMatchCandidate[];
@@ -200,7 +201,15 @@ export type PriceRole =
     | 'unknown';
 
 export interface PriceCandidate {
-    sourceType: 'dom' | 'jsonld' | 'script_pattern' | 'meta' | 'microdata' | 'css_selector';
+    sourceType:
+        | 'dom'
+        | 'jsonld'
+        | 'script_pattern'
+        | 'meta'
+        | 'microdata'
+        | 'css_selector'
+        | 'platform_structured'
+        | 'platform_dom';
     patternType?: string | null;
     label: string;
     valueRaw: unknown;

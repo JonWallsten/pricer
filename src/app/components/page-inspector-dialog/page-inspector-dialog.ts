@@ -18,6 +18,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService } from '../../api.service';
+import { classifyFetchError } from '../../fetch-error.util';
 import { I18nService } from '../../i18n.service';
 import {
     PageInspectorData,
@@ -157,7 +158,11 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
             const data = await this.api.fetchPageSource(this.data.url, selector);
             this.pageData.set(data);
         } catch (e) {
-            this.error.set(e instanceof Error ? e.message : 'Failed to load page');
+            this.error.set(
+                this.getFriendlyFetchError(
+                    e instanceof Error ? e.message : 'Failed to load page',
+                ),
+            );
         } finally {
             this.loading.set(false);
         }
@@ -172,7 +177,11 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
             const data = await this.api.fetchPageSource(this.data.url, selector);
             this.pageData.set(data);
         } catch (e) {
-            this.error.set(e instanceof Error ? e.message : 'Failed to test selector');
+            this.error.set(
+                this.getFriendlyFetchError(
+                    e instanceof Error ? e.message : 'Failed to test selector',
+                ),
+            );
         } finally {
             this.loading.set(false);
         }
@@ -232,8 +241,10 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
             case 'jsonld':
                 return s.sourceJsonLd;
             case 'script_pattern':
+            case 'platform_structured':
                 return s.sourceScript;
             case 'dom':
+            case 'platform_dom':
                 return s.sourceDom;
             case 'meta':
                 return s.sourceMeta;
@@ -319,6 +330,22 @@ export class PageInspectorDialog implements OnInit, OnDestroy {
                 return this.i18n.strings().selectorFragile;
             default:
                 return label;
+        }
+    }
+
+    protected getFriendlyFetchError(error: string | null | undefined): string {
+        const s = this.i18n.strings();
+        switch (classifyFetchError(error)) {
+            case 'cloudflare':
+                return s.siteBlockedByCloudflare;
+            case 'blocked':
+                return s.siteBlockedByStore;
+            case 'rate_limited':
+                return s.siteRateLimited;
+            case 'fetch_failed':
+                return s.siteFetchFailed;
+            default:
+                return error || s.error;
         }
     }
 

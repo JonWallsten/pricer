@@ -50,13 +50,9 @@
                             <div class="product-meta">
                                 <span
                                     class="badge"
-                                    [class.badge--success]="
-                                        product.last_check_status === 'success'
-                                    "
+                                    [class.badge--success]="product.last_check_status === 'success'"
                                     [class.badge--error]="product.last_check_status === 'error'"
-                                    [class.badge--warning]="
-                                        product.last_check_status === 'pending'
-                                    "
+                                    [class.badge--warning]="product.last_check_status === 'pending'"
                                 >
                                     @switch (product.last_check_status) {
                                         @case ('success') {
@@ -73,15 +69,11 @@
                                 @if (product.availability && product.availability !== 'unknown') {
                                     <span
                                         class="badge"
-                                        [class.badge--success]="
-                                            product.availability === 'in_stock'
-                                        "
+                                        [class.badge--success]="product.availability === 'in_stock'"
                                         [class.badge--error]="
                                             product.availability === 'out_of_stock'
                                         "
-                                        [class.badge--warning]="
-                                            product.availability === 'preorder'
-                                        "
+                                        [class.badge--warning]="product.availability === 'preorder'"
                                     >
                                         @switch (product.availability) {
                                             @case ('in_stock') {
@@ -108,7 +100,11 @@
                                         <mat-chip>
                                             <mat-icon matChipAvatar>notifications_active</mat-icon>
                                             {{ product.active_alerts }}
-                                            {{ i18n.strings().activeAlerts }}
+                                            {{
+                                                product.active_alerts === 1
+                                                    ? i18n.strings().activeAlert
+                                                    : i18n.strings().activeAlerts
+                                            }}
                                         </mat-chip>
                                     </mat-chip-set>
                                 }

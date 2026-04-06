@@ -21,6 +21,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '../../api.service';
+import { classifyFetchError } from '../../fetch-error.util';
 import { I18nService } from '../../i18n.service';
 import {
     PreviewResult,
@@ -370,6 +371,22 @@ export class ProductForm implements OnInit, OnDestroy {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
         }).format(price);
+    }
+
+    getFriendlyFetchError(error: string | null | undefined): string {
+        const s = this.i18n.strings();
+        switch (classifyFetchError(error)) {
+            case 'cloudflare':
+                return s.siteBlockedByCloudflare;
+            case 'blocked':
+                return s.siteBlockedByStore;
+            case 'rate_limited':
+                return s.siteRateLimited;
+            case 'fetch_failed':
+                return s.siteFetchFailed;
+            default:
+                return error || s.error;
+        }
     }
 
     goBack() {

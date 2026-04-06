@@ -53,6 +53,7 @@ interface I18nStrings {
     alerts: string;
     addAlert: string;
     targetPrice: string;
+    activeAlert: string;
     activeAlerts: string;
     noAlerts: string;
     alertTriggered: string;
@@ -70,6 +71,10 @@ interface I18nStrings {
     hoursAgo: string;
     daysAgo: string;
     invalidUrl: string;
+    siteBlockedByCloudflare: string;
+    siteBlockedByStore: string;
+    siteRateLimited: string;
+    siteFetchFailed: string;
 
     // Price history
     priceHistory: string;
@@ -136,7 +141,19 @@ interface I18nStrings {
     queryUsed: string;
     discoveryUnavailable: string;
     trackMatch: string;
+    dismissMatch: string;
     cannotRemoveLastUrl: string;
+
+    // Debug mode
+    debugMode: string;
+    debugSource: string;
+    debugQueries: string;
+    debugSearchesRun: string;
+    debugBreakdown: string;
+    debugIdentifiers: string;
+    debugSerpPosition: string;
+    debugCopyQuery: string;
+    debugTokens: string;
 
     // Page inspector
     pickSelector: string;
@@ -155,6 +172,11 @@ interface I18nStrings {
     selectorFragile: string;
     renderedPickerUnavailable: string;
     sourceView: string;
+    selectorConfirmTitle: string;
+    selectorConfirmFallback: string;
+    selectorConfirmOnly: string;
+    selectorConfirmFallbackHint: string;
+    selectorConfirmOnlyHint: string;
 
     // Extraction strategy
     extractionStrategy: string;
@@ -263,6 +285,7 @@ const en: I18nStrings = {
     alerts: 'Alerts',
     addAlert: 'Add alert',
     targetPrice: 'Target price',
+    activeAlert: 'active alert',
     activeAlerts: 'active alerts',
     noAlerts: 'No alerts yet',
     alertTriggered: 'Triggered',
@@ -279,6 +302,11 @@ const en: I18nStrings = {
     hoursAgo: '{n}h ago',
     daysAgo: '{n}d ago',
     invalidUrl: 'Enter a valid URL',
+    siteBlockedByCloudflare:
+        'This store is protected by Cloudflare and is blocking automated fetching right now.',
+    siteBlockedByStore: 'This store is blocking automated fetching right now.',
+    siteRateLimited: 'This store is rate limiting automated fetching right now.',
+    siteFetchFailed: 'Could not fetch the page. The store may be blocking automated access.',
 
     priceHistory: 'Price history',
     week: 'Week',
@@ -338,7 +366,19 @@ const en: I18nStrings = {
     queryUsed: 'Query',
     discoveryUnavailable: 'Discovery is unavailable until SerpApi is configured.',
     trackMatch: 'Track price',
+    dismissMatch: 'Hide',
     cannotRemoveLastUrl: 'Cannot remove the last URL',
+
+    // Debug mode
+    debugMode: 'Debug mode',
+    debugSource: 'Source normalization',
+    debugQueries: 'Search queries',
+    debugSearchesRun: 'Searches run',
+    debugBreakdown: 'Score breakdown',
+    debugIdentifiers: 'Extracted identifiers',
+    debugSerpPosition: 'SERP position',
+    debugCopyQuery: 'Copy',
+    debugTokens: 'Tokens',
 
     // Page inspector
     pickSelector: 'Pick selector',
@@ -360,6 +400,11 @@ const en: I18nStrings = {
     renderedPickerUnavailable:
         'Live page picker is not yet available. Selectors are tested against server-fetched HTML.',
     sourceView: 'Source view',
+    selectorConfirmTitle: 'How should this selector be used?',
+    selectorConfirmFallback: 'Use as fallback',
+    selectorConfirmOnly: 'Use selector only',
+    selectorConfirmFallbackHint: 'Auto-extract first, fall back to this selector if needed',
+    selectorConfirmOnlyHint: 'Always use this selector to extract the price',
 
     extractionStrategy: 'Extraction mode',
     extractionStrategyAuto: 'Auto',
@@ -465,6 +510,7 @@ const sv: I18nStrings = {
     alerts: 'Bevakningar',
     addAlert: 'Lägg till bevakning',
     targetPrice: 'Målpris',
+    activeAlert: 'aktiv bevakning',
     activeAlerts: 'aktiva bevakningar',
     noAlerts: 'Inga bevakningar ännu',
     alertTriggered: 'Utlöst',
@@ -481,6 +527,11 @@ const sv: I18nStrings = {
     hoursAgo: '{n}t sedan',
     daysAgo: '{n}d sedan',
     invalidUrl: 'Ange en giltig URL',
+    siteBlockedByCloudflare:
+        'Den här butiken skyddas av Cloudflare och blockerar automatiserad hämtning just nu.',
+    siteBlockedByStore: 'Den här butiken blockerar automatiserad hämtning just nu.',
+    siteRateLimited: 'Den här butiken begränsar automatiserad hämtning just nu.',
+    siteFetchFailed: 'Det gick inte att hämta sidan. Butiken kan blockera automatiserad åtkomst.',
 
     priceHistory: 'Prishistorik',
     week: 'Vecka',
@@ -540,7 +591,19 @@ const sv: I18nStrings = {
     queryUsed: 'Sökfråga',
     discoveryUnavailable: 'Matchsökning är inte tillgänglig förrän SerpApi är konfigurerat.',
     trackMatch: 'Bevaka pris',
+    dismissMatch: 'Dölj',
     cannotRemoveLastUrl: 'Kan inte ta bort sista URL:en',
+
+    // Debug mode
+    debugMode: 'Felsökningsläge',
+    debugSource: 'Källnormalisering',
+    debugQueries: 'Sökfrågor',
+    debugSearchesRun: 'Sökningar körda',
+    debugBreakdown: 'Poängfördelning',
+    debugIdentifiers: 'Extraherade identifierare',
+    debugSerpPosition: 'SERP-position',
+    debugCopyQuery: 'Kopiera',
+    debugTokens: 'Token',
 
     // Page inspector
     pickSelector: 'Välj selektor',
@@ -562,6 +625,12 @@ const sv: I18nStrings = {
     renderedPickerUnavailable:
         'Live-sidväljare är inte tillgänglig ännu. Selektorer testas mot serverhämtad HTML.',
     sourceView: 'Källvy',
+    selectorConfirmTitle: 'Hur ska denna selektor användas?',
+    selectorConfirmFallback: 'Använd som reserv',
+    selectorConfirmOnly: 'Använd bara selektor',
+    selectorConfirmFallbackHint:
+        'Extrahera automatiskt först, använd selektorn som reserv vid behov',
+    selectorConfirmOnlyHint: 'Använd alltid denna selektor för att extrahera priset',
 
     extractionStrategy: 'Extraheringsläge',
     extractionStrategyAuto: 'Automatisk',

@@ -8,13 +8,30 @@
             <a class="toolbar-title" routerLink="/">🏷️ {{ i18n.strings().appName }}</a>
             <span class="spacer"></span>
             @if (auth.user()?.is_admin) {
+                <span class="admin-btn-wrap">
+                    <button
+                        mat-icon-button
+                        routerLink="/admin"
+                        [attr.aria-label]="i18n.strings().adminUsers"
+                        [title]="i18n.strings().adminUsers"
+                    >
+                        <mat-icon>admin_panel_settings</mat-icon>
+                    </button>
+                    @if (pendingCount() > 0) {
+                        <span class="admin-pending-badge" aria-hidden="true">{{
+                            pendingCount()
+                        }}</span>
+                    }
+                </span>
                 <button
                     mat-icon-button
-                    routerLink="/admin"
-                    [attr.aria-label]="i18n.strings().adminUsers"
-                    [title]="i18n.strings().adminUsers"
+                    class="debug-toggle-btn"
+                    [class.debug-toggle-btn--active]="auth.debugMode()"
+                    [attr.aria-label]="i18n.strings().debugMode"
+                    [title]="i18n.strings().debugMode"
+                    (click)="auth.debugMode.set(!auth.debugMode())"
                 >
-                    <mat-icon>admin_panel_settings</mat-icon>
+                    <mat-icon>bug_report</mat-icon>
                 </button>
             }
             <button

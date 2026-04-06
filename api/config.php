@@ -54,6 +54,7 @@ define('ADMIN_GOOGLE_ID', $_ENV['ADMIN_GOOGLE_ID'] ?? '');
 define('SERPAPI_API_KEY', $_ENV['SERPAPI_API_KEY'] ?? '');
 define('SERPAPI_SEARCH_COUNTRY', $_ENV['SERPAPI_SEARCH_COUNTRY'] ?? 'se');
 define('SERPAPI_SEARCH_LOCALE', $_ENV['SERPAPI_SEARCH_LOCALE'] ?? 'sv-se');
+define('SERPAPI_NUM_RESULTS', (int) ($_ENV['SERPAPI_NUM_RESULTS'] ?? 10));
 
 // ─── App deployment config ─────────────────────────────────
 // APP_URL: public base URL of the app, no trailing slash (e.g. https://example.com/pricer)

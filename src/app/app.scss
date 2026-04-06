@@ -34,6 +34,45 @@ mat-toolbar {
     flex: 1;
 }
 
+.admin-btn-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.admin-pending-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9999px;
+    background: var(--mat-sys-error);
+    color: var(--mat-sys-on-error);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    pointer-events: none;
+    box-shadow: 0 0 0 2px var(--mat-sys-surface-container-lowest);
+}
+
+.debug-toggle-btn {
+    opacity: 0.5;
+    transition:
+        opacity 0.15s,
+        color 0.15s;
+
+    &:hover {
+        opacity: 0.8;
+    }
+
+    &--active {
+        opacity: 1;
+        color: var(--mat-sys-tertiary);
+    }
+}
+
 .topbar-icon-btn {
     background: color-mix(in srgb, var(--mat-sys-on-surface) 7%, transparent);
     border: none;

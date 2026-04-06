@@ -54,23 +54,29 @@ function recordSuccessfulPattern(PDO $db, string $url, array $result): void
         }
     }
 
-    $debugPath = $result['debug_path'] ?? null;
+    $debugPath           = $result['debug_path'] ?? null;
+    $platform            = ($result['platform'] ?? 'unknown') !== 'unknown' ? ($result['platform'] ?? null) : null;
+    $platformConfidence  = $platform !== null ? ($result['platform_confidence'] ?? null) : null;
 
     $stmt = $db->prepare(
-        'INSERT INTO domain_patterns (domain, extraction_method, pattern_type, css_selector, debug_path, hit_count, last_success_at)
-         VALUES (:domain, :method, :pattern_type, :css, :debug_path, 1, NOW())
+        'INSERT INTO domain_patterns (domain, extraction_method, pattern_type, css_selector, debug_path, platform, platform_confidence, hit_count, last_success_at)
+         VALUES (:domain, :method, :pattern_type, :css, :debug_path, :platform, :platform_confidence, 1, NOW())
          ON DUPLICATE KEY UPDATE
              hit_count = hit_count + 1,
              last_success_at = NOW(),
              pattern_type = COALESCE(VALUES(pattern_type), pattern_type),
-             debug_path = COALESCE(VALUES(debug_path), debug_path)'
+             debug_path = COALESCE(VALUES(debug_path), debug_path),
+             platform = COALESCE(VALUES(platform), platform),
+             platform_confidence = COALESCE(VALUES(platform_confidence), platform_confidence)'
     );
     $stmt->execute([
-        ':domain'       => $domain,
-        ':method'       => $method,
-        ':pattern_type' => $patternType,
-        ':css'          => $cssSelector,
-        ':debug_path'   => $debugPath,
+        ':domain'              => $domain,
+        ':method'              => $method,
+        ':pattern_type'        => $patternType,
+        ':css'                 => $cssSelector,
+        ':debug_path'          => $debugPath,
+        ':platform'            => $platform,
+        ':platform_confidence' => $platformConfidence,
     ]);
 }
 

@@ -6,6 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { ApiService } from '../../api.service';
 import { I18nService } from '../../i18n.service';
+import { App } from '../../app';
 import { AdminUser } from '../../models';
 import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
 
@@ -25,6 +26,7 @@ import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
 })
 export class Admin implements OnInit {
     private readonly api = inject(ApiService);
+    private readonly shell = inject(App);
     protected readonly i18n = inject(I18nService);
 
     protected readonly users = signal<AdminUser[]>([]);
@@ -52,6 +54,7 @@ export class Admin implements OnInit {
             this.users.update((list) =>
                 list.map((u) => (u.id === user.id ? { ...u, is_approved: true } : u)),
             );
+            this.shell.refreshPendingCount();
         } catch {
             // Failed
         }
@@ -63,6 +66,7 @@ export class Admin implements OnInit {
             this.users.update((list) =>
                 list.map((u) => (u.id === user.id ? { ...u, is_approved: false } : u)),
             );
+            this.shell.refreshPendingCount();
         } catch {
             // Failed
         }

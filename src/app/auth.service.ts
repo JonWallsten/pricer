@@ -32,6 +32,7 @@ export class AuthService {
 
     readonly user = signal<User | null>(null);
     readonly loading = signal(true);
+    readonly debugMode = signal(false);
     private clientId = '';
 
     /** Resolves once the initial session check is complete. Guards await this. */

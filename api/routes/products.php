@@ -99,11 +99,12 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
             return;
         }
 
-        $html = fetchPage($url);
-        if ($html === null) {
-            sendJson(['error' => 'Failed to fetch page'], 502);
+        $fetch = fetchPageResponse($url);
+        if (!$fetch['ok']) {
+            sendJson(['error' => $fetch['blocked_reason'] ?? $fetch['error'] ?? 'Failed to fetch page'], 502);
             return;
         }
+        $html = $fetch['body'];
 
         $preview = preparePageForPreview($html, $url);
 
@@ -641,6 +642,67 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
         return;
     }
 
+    // PATCH /products/:id/urls/:urlId — update a single tracked URL (css_selector, extraction_strategy)
+    if ($method === 'PATCH' && preg_match('#^/products/(\d+)/urls/(\d+)$#', $path, $m)) {
+        $productId = (int) $m[1];
+        $urlId     = (int) $m[2];
+
+        // Verify product ownership
+        $stmt = $db->prepare('SELECT id FROM products WHERE id = :id AND user_id = :uid');
+        $stmt->execute([':id' => $productId, ':uid' => $userId]);
+        if (!$stmt->fetch()) {
+            sendJson(['error' => 'Product not found'], 404);
+            return;
+        }
+
+        // Verify URL belongs to this product
+        $urlStmt = $db->prepare('SELECT * FROM product_urls WHERE id = :uid AND product_id = :pid');
+        $urlStmt->execute([':uid' => $urlId, ':pid' => $productId]);
+        $existingUrl = $urlStmt->fetch();
+        if (!$existingUrl) {
+            sendJson(['error' => 'URL not found'], 404);
+            return;
+        }
+
+        $body = getJsonBody();
+
+        $sets = [];
+        $params = [':id' => $urlId];
+
+        if (array_key_exists('css_selector', $body)) {
+            $sel = $body['css_selector'];
+            $sets[] = 'css_selector = :css';
+            $params[':css'] = is_string($sel) && $sel !== '' ? $sel : null;
+        }
+
+        if (array_key_exists('extraction_strategy', $body)) {
+            $strategy = $body['extraction_strategy'];
+            if (!in_array($strategy, ['auto', 'selector'], true)) {
+                sendJson(['error' => 'Invalid extraction_strategy — must be "auto" or "selector"'], 400);
+                return;
+            }
+            $sets[] = 'extraction_strategy = :es';
+            $params[':es'] = $strategy;
+        }
+
+        if (empty($sets)) {
+            sendJson(['error' => 'No fields to update'], 400);
+            return;
+        }
+
+        $sql = 'UPDATE product_urls SET ' . implode(', ', $sets) . ' WHERE id = :id';
+        $db->prepare($sql)->execute($params);
+
+        // Return the updated URL row
+        $updatedUrl = $db->prepare('SELECT * FROM product_urls WHERE id = :id');
+        $updatedUrl->execute([':id' => $urlId]);
+        $urlRow = $updatedUrl->fetch();
+        castProductUrlFields($urlRow);
+
+        sendJson(['url' => $urlRow]);
+        return;
+    }
+
     // POST /products/:id/add-url — add a single URL to an existing product
     if ($method === 'POST' && preg_match('#^/products/(\d+)/add-url$#', $path, $m)) {
         $productId = (int) $m[1];
@@ -717,6 +779,35 @@ function handleProductRoutes(string $method, string $path, array $authUser): voi
 
         $matches = listProductMatches($db, $productId, true);
         sendJson(['matches' => $matches]);
+        return;
+    }
+
+    // PATCH /products/:id/matches/:matchId — dismiss a match (set excluded = 1)
+    if ($method === 'PATCH' && preg_match('#^/products/(\d+)/matches/(\d+)$#', $path, $m)) {
+        $productId = (int) $m[1];
+        $matchId   = (int) $m[2];
+
+        $stmt = $db->prepare('SELECT id FROM products WHERE id = :id AND user_id = :uid');
+        $stmt->execute([':id' => $productId, ':uid' => $userId]);
+        if (!$stmt->fetch()) {
+            sendJson(['error' => 'Product not found'], 404);
+            return;
+        }
+
+        $check = $db->prepare(
+            'SELECT id FROM product_match_candidates WHERE id = :mid AND source_product_id = :pid'
+        );
+        $check->execute([':mid' => $matchId, ':pid' => $productId]);
+        if (!$check->fetch()) {
+            sendJson(['error' => 'Match not found'], 404);
+            return;
+        }
+
+        $db->prepare(
+            'UPDATE product_match_candidates SET excluded = 1 WHERE id = :mid AND source_product_id = :pid'
+        )->execute([':mid' => $matchId, ':pid' => $productId]);
+
+        sendJson(['ok' => true]);
         return;
     }
 

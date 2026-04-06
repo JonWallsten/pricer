@@ -6,9 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-#### Changed
+### Added
 
-- **Cross-store discovery quality**: matches now require an extractable price (priceless supplier/info pages are skipped), only one match per domain is kept (highest-scoring wins), and script-pattern extraction (WebComponents, **NEXT_DATA**, etc.) is used as a price fallback when structured data has no price
+- **Selector picker flow for match URLs**: clicking "Track" on a match candidate adds the URL and automatically opens the page inspector in pick mode if price extraction fails — user can pick a CSS selector, then choose whether to use it as a fallback (auto strategy) or as the sole extraction method (selector strategy); cancelling at any step keeps the URL in auto mode; a new "Pick selector" option in the URL menu allows triggering this flow manually on any tracked URL
+- **PATCH /products/:id/urls/:urlId endpoint**: update `css_selector` and `extraction_strategy` on individual tracked URLs
+- **Admin debug mode**: toolbar toggle (bug icon, admin-only) that reveals match discovery internals on the product detail page — search queries with copy-to-clipboard, source normalization (title, brand, model, MPN, GTIN, SKU, tokens), per-match score breakdown (title similarity, brand/model/GTIN/MPN/color/dimensions/price scores, penalties), SERP position, and extracted candidate identifiers
+- **Platform detection**: `detectPlatformContext()` identifies the e-commerce platform (Shopify, WooCommerce, Magento, PrestaShop, Centra, Shopware, BigCommerce, SFCC) and frontend framework (Next.js, Nuxt) from page signals — platform, frontend_framework, confidence, signals, and reasons are now included in every extraction result
+- **Platform-aware candidate extraction**: `extractPlatformCandidates()` generates platform-specific price candidates (structured and DOM tiers) that enrich the existing multi-strategy pipeline without replacing it — Shopify variant data, WooCommerce `ins/del` amounts, Magento `data-price-amount` attributes, and more
+- Migration 013: adds `platform` and `platform_confidence` columns to `domain_patterns` table; platform context is now persisted alongside successful extraction patterns
+
+### Fixed
+
+- **Match dismiss 404**: `listProductMatches` was returning `excluded=1` matches when `$includeWeak=true`, causing a page refresh to re-show dismissed matches. Clicking dismiss a second time returned HTTP 404 because MySQL reports 0 affected rows when the value doesn't change. Fixed by always filtering `excluded = 0` in the list query and making the PATCH handler idempotent (checks existence instead of row count).
+- **Matches invisible after discovery**: discovery auto-set `excluded = 1` for matches with score < 50, and `ON DUPLICATE KEY UPDATE` overwrote the user's manual dismiss/un-dismiss on re-discovery. Fixed: `excluded` now defaults to `0` on insert and is never overwritten by re-discovery — it only changes via explicit user action.
+- **CORS**: added `PATCH` to `Access-Control-Allow-Methods` header so match-dismiss requests are no longer blocked by the browser preflight check
+- **Discovery crash on empty SerpApi result**: when the primary search query returned a SerpApi "no results" error, the entire discovery aborted without trying the fallback query. Now catches per-query errors and continues to the next query.
+
+### Changed
+
+- **Cross-store discovery quality**: only one match per domain is kept (highest-scoring wins), and script-pattern extraction (WebComponents, **NEXT_DATA**, etc.) is used as a price fallback when structured data has no price
+- **Discovery returns more matches**: relaxed candidate filter from requiring an extracted price to accepting any commerce signal (price, availability, or SKU) — lets through webshops where our scraper can't extract the price while still blocking manufacturer/supplier info pages; increased candidate limit from 5 to 8; early break now requires 3+ strong matches instead of just 1
 
 ## [1.1.0] — 2026-04-05
 
