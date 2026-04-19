@@ -9,10 +9,20 @@
     margin-top: 16px;
 }
 
+.product-form .mat-mdc-form-field-hint,
+.product-form .mat-mdc-form-field-error {
+    white-space: normal;
+    line-height: 1.25;
+}
+
+.product-form .mat-mdc-form-field-subscript-wrapper {
+    margin-top: 4px;
+}
+
 .url-row {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     padding: 16px;
     border-radius: var(--app-radius-sm);
     background: var(--app-surface-raised);
@@ -191,7 +201,11 @@
 }
 
 .strategy-field {
-    max-width: 220px;
+    width: 100%;
+}
+
+.selector-field {
+    width: 100%;
 }
 
 // ─── Domain Pattern Suggestion ────────────────────────────

@@ -35,7 +35,7 @@
                                 matInput
                                 formControlName="url"
                                 type="url"
-                                placeholder="https://..."
+                                placeholder="https://"
                                 autocomplete="off"
                             />
                             @if (urlGroup.controls['url'].hasError('required')) {
@@ -109,7 +109,20 @@
                             </div>
                         }
 
-                        <mat-form-field appearance="outline">
+                        <mat-form-field appearance="outline" class="strategy-field">
+                            <mat-label>{{ i18n.strings().extractionStrategy }}</mat-label>
+                            <mat-select formControlName="extraction_strategy">
+                                <mat-option value="auto">{{
+                                    i18n.strings().extractionStrategyAuto
+                                }}</mat-option>
+                                <mat-option value="selector">{{
+                                    i18n.strings().extractionStrategySelector
+                                }}</mat-option>
+                            </mat-select>
+                            <mat-hint>{{ i18n.strings().extractionStrategyHint }}</mat-hint>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="selector-field">
                             <mat-label>{{ i18n.strings().cssSelector }}</mat-label>
                             <input
                                 matInput
@@ -165,18 +178,6 @@
                             }
                         }
 
-                        <mat-form-field appearance="outline" class="strategy-field">
-                            <mat-label>{{ i18n.strings().extractionStrategy }}</mat-label>
-                            <mat-select formControlName="extraction_strategy">
-                                <mat-option value="auto">{{
-                                    i18n.strings().extractionStrategyAuto
-                                }}</mat-option>
-                                <mat-option value="selector">{{
-                                    i18n.strings().extractionStrategySelector
-                                }}</mat-option>
-                            </mat-select>
-                            <mat-hint>{{ i18n.strings().extractionStrategyHint }}</mat-hint>
-                        </mat-form-field>
                         @if (urlGroup.controls['url'].valid && urlGroup.controls['url'].value) {
                             <button
                                 mat-stroked-button

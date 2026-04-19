@@ -333,10 +333,11 @@
 
         <!-- Cross-store matches -->
         <section class="section">
-            <div class="section-header">
+            <div class="section-header section-header--matches">
                 <h2>{{ i18n.strings().otherStores }}</h2>
                 <button
                     mat-flat-button
+                    class="matches-action-btn"
                     (click)="discoverMatches(true)"
                     [disabled]="discoveringMatches()"
                 >
@@ -440,8 +441,7 @@
             } @else if (filteredMatches().length === 0) {
                 <div class="alerts-empty matches-empty">
                     <mat-icon class="empty-icon">travel_explore</mat-icon>
-                    <p>{{ i18n.strings().noMatches }}</p>
-                    <p>{{ i18n.strings().noMatchesHint }}</p>
+                    <p class="matches-empty-hint">{{ i18n.strings().noMatchesHint }}</p>
                 </div>
             } @else {
                 <div class="match-list">
