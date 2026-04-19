@@ -248,6 +248,7 @@ export class ApiService {
         productId: number,
         targetPrice: number,
         notifyBackInStock = false,
+        renotifyDropAmount: number | null = null,
     ): Promise<Alert> {
         const res = await fetch(`api/products/${productId}/alerts`, {
             method: 'POST',
@@ -256,6 +257,7 @@ export class ApiService {
             body: JSON.stringify({
                 target_price: targetPrice,
                 notify_back_in_stock: notifyBackInStock,
+                renotify_drop_amount: renotifyDropAmount,
             }),
         });
         if (!res.ok) {
@@ -268,7 +270,12 @@ export class ApiService {
 
     async updateAlert(
         id: number,
-        body: { target_price?: number; is_active?: boolean; notify_back_in_stock?: boolean },
+        body: {
+            target_price?: number;
+            is_active?: boolean;
+            notify_back_in_stock?: boolean;
+            renotify_drop_amount?: number | null;
+        },
     ): Promise<Alert> {
         const res = await fetch(`api/alerts/${id}`, {
             method: 'PUT',

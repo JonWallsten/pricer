@@ -879,6 +879,9 @@ function castAlertFieldsInline(array &$a): void
     $a['is_active'] = (bool) $a['is_active'];
     $a['last_notified_price'] = $a['last_notified_price'] !== null ? (float) $a['last_notified_price'] : null;
     $a['notify_back_in_stock'] = (bool) ($a['notify_back_in_stock'] ?? false);
+    $a['renotify_drop_amount'] = isset($a['renotify_drop_amount'])
+        ? (float) $a['renotify_drop_amount']
+        : null;
 }
 
 function fetchProduct(PDO $db, int $productId): array

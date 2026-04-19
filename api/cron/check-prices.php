@@ -195,7 +195,7 @@ foreach ($productsToSync as $productId => $info) {
         // Only notify if alert also has target_price met
         if ($oldAvailability === 'out_of_stock' && $bestAvail === 'in_stock') {
             $bisStmt = $db->prepare(
-                'SELECT a.id FROM alerts a
+                'SELECT a.* FROM alerts a
                  WHERE a.product_id = :pid AND a.is_active = 1 AND a.notify_back_in_stock = 1
                    AND a.target_price >= :price'
             );
@@ -213,25 +213,35 @@ foreach ($productsToSync as $productId => $info) {
                     $productId
                 );
                 echo $sent ? "sent.\n" : "FAILED.\n";
-                if ($sent) $notified++;
+                if ($sent) {
+                    $notifyStmt = $db->prepare(
+                        'UPDATE alerts SET last_notified_price = :price, last_notified_at = NOW() WHERE id = :id'
+                    );
+                    $notifyStmt->execute([
+                        ':price' => $currentPrice,
+                        ':id' => (int) $bisAlert['id'],
+                    ]);
+                    $notified++;
+                }
             }
         }
 
         // Check for triggered alerts
         $alertStmt = $db->prepare(
             'SELECT * FROM alerts
-             WHERE product_id = :pid AND is_active = 1 AND target_price >= :price
-               AND (last_notified_price IS NULL OR :price2 < last_notified_price)'
+             WHERE product_id = :pid AND is_active = 1 AND target_price >= :price'
         );
         $alertStmt->execute([
             ':pid'    => $productId,
             ':price'  => $currentPrice,
-            ':price2' => $currentPrice,
         ]);
         $alerts = $alertStmt->fetchAll();
 
         foreach ($alerts as $alert) {
             $targetPrice = (float) $alert['target_price'];
+            if (!shouldSendPriceAlert($alert, $currentPrice)) {
+                continue;
+            }
 
             // If alert requires in-stock and product is explicitly out of stock, defer notification
             // (unknown availability is allowed through — only defer when we know it's out of stock)
@@ -284,3 +294,26 @@ foreach ($productsToSync as $productId => $info) {
 
 $elapsed = round(microtime(true) - $startTime, 2);
 echo "[$timestamp] Done. URLs checked: $checked, Errors: $errors, Notifications: $notified, Time: {$elapsed}s\n";
+
+function shouldSendPriceAlert(array $alert, float $currentPrice): bool
+{
+    $targetPrice = (float) $alert['target_price'];
+    if ($currentPrice > $targetPrice) {
+        return false;
+    }
+
+    if ($alert['last_notified_price'] === null) {
+        return true;
+    }
+
+    $lastNotifiedPrice = (float) $alert['last_notified_price'];
+    $repeatAmount = isset($alert['renotify_drop_amount']) ? (float) $alert['renotify_drop_amount'] : 0.0;
+    if ($repeatAmount <= 0) {
+        return $currentPrice < $lastNotifiedPrice;
+    }
+
+    $currentStep = (int) floor((max(0.0, $targetPrice - $currentPrice) + 0.00001) / $repeatAmount);
+    $lastStep = (int) floor((max(0.0, $targetPrice - $lastNotifiedPrice) + 0.00001) / $repeatAmount);
+
+    return $currentStep > $lastStep;
+}

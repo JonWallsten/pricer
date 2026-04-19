@@ -85,6 +85,8 @@ export class ProductDetail implements OnInit, OnDestroy {
     protected readonly checkResult = signal<ExtractionResult | null>(null);
     protected readonly checkingUrlIds = signal<Set<number>>(new Set());
     protected readonly addingAlert = signal(false);
+    protected readonly editingAlertId = signal<number | null>(null);
+    protected readonly savingAlertId = signal<number | null>(null);
     protected readonly historyPeriod = signal<string>('month');
     protected readonly history = signal<PriceHistoryEntry[]>([]);
     protected readonly historyLoading = signal(false);
@@ -98,6 +100,7 @@ export class ProductDetail implements OnInit, OnDestroy {
     protected readonly filteredMatches = computed(() =>
         this.matches().filter((m) => !this.trackedUrls().has(m.candidate_url)),
     );
+    protected readonly discountOptions = [5, 10, 25, 50] as const;
 
     readonly chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('priceChart');
     private chart: Chart | null = null;
@@ -117,6 +120,14 @@ export class ProductDetail implements OnInit, OnDestroy {
 
     protected readonly alertForm = this.fb.nonNullable.group({
         target_price: [0, [Validators.required, Validators.min(0.01)]],
+        notify_back_in_stock: [false],
+        renotify_drop_amount: [0, [Validators.min(0)]],
+    });
+
+    protected readonly editAlertForm = this.fb.nonNullable.group({
+        target_price: [0, [Validators.required, Validators.min(0.01)]],
+        notify_back_in_stock: [false],
+        renotify_drop_amount: [0, [Validators.min(0)]],
     });
 
     async ngOnInit() {
@@ -511,13 +522,57 @@ export class ProductDetail implements OnInit, OnDestroy {
             const alert = await this.api.createAlert(
                 Number(this.id()),
                 this.alertForm.controls.target_price.value,
+                this.alertForm.controls.notify_back_in_stock.value,
+                this.normalizeRenotifyDropAmount(this.alertForm.controls.renotify_drop_amount.value),
             );
             this.alerts.update((list) => [alert, ...list]);
-            this.alertForm.reset({ target_price: 0 });
+            this.alertForm.reset({
+                target_price: 0,
+                notify_back_in_stock: false,
+                renotify_drop_amount: 0,
+            });
         } catch {
             // Error
         } finally {
             this.addingAlert.set(false);
+        }
+    }
+
+    startEditingAlert(alert: Alert) {
+        this.editingAlertId.set(alert.id);
+        this.editAlertForm.reset({
+            target_price: alert.target_price,
+            notify_back_in_stock: alert.notify_back_in_stock,
+            renotify_drop_amount: alert.renotify_drop_amount ?? 0,
+        });
+    }
+
+    cancelEditingAlert() {
+        this.editingAlertId.set(null);
+        this.savingAlertId.set(null);
+        this.editAlertForm.reset({
+            target_price: 0,
+            notify_back_in_stock: false,
+            renotify_drop_amount: 0,
+        });
+    }
+
+    async saveAlert(alert: Alert) {
+        if (this.editAlertForm.invalid) return;
+
+        this.savingAlertId.set(alert.id);
+        try {
+            const updated = await this.api.updateAlert(alert.id, {
+                target_price: this.editAlertForm.controls.target_price.value,
+                notify_back_in_stock: this.editAlertForm.controls.notify_back_in_stock.value,
+                renotify_drop_amount: this.normalizeRenotifyDropAmount(
+                    this.editAlertForm.controls.renotify_drop_amount.value,
+                ),
+            });
+            this.alerts.update((list) => list.map((a) => (a.id === updated.id ? updated : a)));
+            this.cancelEditingAlert();
+        } catch {
+            this.savingAlertId.set(null);
         }
     }
 
@@ -546,9 +601,39 @@ export class ProductDetail implements OnInit, OnDestroy {
         try {
             await this.api.deleteAlert(alert.id);
             this.alerts.update((list) => list.filter((a) => a.id !== alert.id));
+            if (this.editingAlertId() === alert.id) {
+                this.cancelEditingAlert();
+            }
         } catch {
             // Error
         }
+    }
+
+    private normalizeRenotifyDropAmount(value: number): number | null {
+        return value > 0 ? value : null;
+    }
+
+    protected applyDiscountToNewAlert(pct: number) {
+        const target = this.getTargetPriceForDiscount(pct);
+        if (target === null) return;
+        this.alertForm.controls.target_price.setValue(target);
+    }
+
+    protected applyDiscountToEditingAlert(pct: number) {
+        const target = this.getTargetPriceForDiscount(pct);
+        if (target === null) return;
+        this.editAlertForm.controls.target_price.setValue(target);
+    }
+
+    protected isDiscountSelected(targetPrice: number, pct: number): boolean {
+        const target = this.getTargetPriceForDiscount(pct);
+        return target !== null && Math.round(targetPrice) === target;
+    }
+
+    private getTargetPriceForDiscount(pct: number): number | null {
+        const basePrice = this.product()?.current_price;
+        if (basePrice === null || basePrice === undefined) return null;
+        return Math.round(basePrice * (1 - pct / 100));
     }
 
     formatPrice(price: number | null, currency?: string | null): string {

@@ -204,33 +204,68 @@
                     }
                 </mat-form-field>
 
-                @if (!isEdit() && firstPreviewPrice()?.price; as previewPrice) {
-                    <div class="alert-section">
-                        <h3>{{ i18n.strings().notifyWhenDropsTo }}</h3>
-                        <div class="discount-chips">
-                            @for (pct of discountOptions; track pct) {
-                                <button
-                                    mat-stroked-button
-                                    type="button"
-                                    [class.chip-selected]="selectedDiscount() === pct"
-                                    (click)="selectDiscount(pct)"
-                                >
-                                    -{{ pct }}%
-                                </button>
-                            }
-                        </div>
-                        @if (targetPrice(); as tp) {
-                            <div class="target-preview">
-                                {{ i18n.strings().targetPrice }}: {{ formatPrice(tp) }}
+                @if (!isEdit()) {
+                    @if (firstPreviewPrice(); as previewPrice) {
+                        <div class="alert-section">
+                            <h3>{{ i18n.strings().notifyWhenDropsTo }}</h3>
+                            <div class="discount-chips">
+                                @for (pct of discountOptions; track pct) {
+                                    <button
+                                        mat-stroked-button
+                                        type="button"
+                                        [class.chip-selected]="selectedDiscount() === pct"
+                                        (click)="selectDiscount(pct)"
+                                    >
+                                        -{{ pct }}%
+                                    </button>
+                                }
                             </div>
-                        }
-                        <mat-checkbox
-                            [checked]="notifyBackInStock()"
-                            (change)="notifyBackInStock.set($event.checked)"
-                        >
-                            {{ i18n.strings().notifyBackInStock }}
-                        </mat-checkbox>
-                    </div>
+                            <div class="alert-settings-grid">
+                                <mat-form-field appearance="outline">
+                                    <mat-label
+                                        >{{ i18n.strings().targetPrice }} ({{
+                                            previewPrice.currency || i18n.strings().currency
+                                        }})</mat-label
+                                    >
+                                    <input
+                                        matInput
+                                        type="number"
+                                        min="0.01"
+                                        step="1"
+                                        [value]="displayedAlertTargetPrice() ?? ''"
+                                        (input)="onAlertTargetInput($any($event.target).value)"
+                                    />
+                                </mat-form-field>
+                                <mat-form-field appearance="outline">
+                                    <mat-label
+                                        >{{ i18n.strings().repeatAlertEvery }} ({{
+                                            previewPrice.currency || i18n.strings().currency
+                                        }})</mat-label
+                                    >
+                                    <input
+                                        matInput
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        [value]="renotifyDropAmount() ?? ''"
+                                        (input)="onRenotifyDropInput($any($event.target).value)"
+                                    />
+                                    <mat-hint>{{ i18n.strings().repeatAlertHint }}</mat-hint>
+                                </mat-form-field>
+                            </div>
+                            @if (displayedAlertTargetPrice(); as tp) {
+                                <div class="target-preview">
+                                    {{ i18n.strings().targetPrice }}: {{ formatPrice(tp) }}
+                                </div>
+                            }
+                            <mat-checkbox
+                                [checked]="notifyBackInStock()"
+                                (change)="notifyBackInStock.set($event.checked)"
+                            >
+                                {{ i18n.strings().notifyBackInStock }}
+                            </mat-checkbox>
+                        </div>
+                    }
                 }
 
                 @if (priceWarning()) {

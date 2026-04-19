@@ -75,6 +75,8 @@ export class ProductForm implements OnInit, OnDestroy {
     protected readonly discountOptions = [5, 10, 25, 50] as const;
     protected readonly selectedDiscount = signal<number | null>(10);
     protected readonly notifyBackInStock = signal(false);
+    protected readonly alertTargetPrice = signal<number | null>(null);
+    protected readonly renotifyDropAmount = signal<number | null>(null);
 
     protected readonly form = this.fb.nonNullable.group({
         name: ['', Validators.required],
@@ -101,6 +103,10 @@ export class ProductForm implements OnInit, OnDestroy {
         if (!p?.price || d === null) return null;
         return Math.round(p.price * (1 - d / 100));
     });
+
+    protected readonly displayedAlertTargetPrice = computed(
+        () => this.alertTargetPrice() ?? this.targetPrice(),
+    );
 
     private urlDebounceTimers = new Map<number, ReturnType<typeof setTimeout>>();
     private urlSubscriptions: (() => void)[] = [];
@@ -243,6 +249,42 @@ export class ProductForm implements OnInit, OnDestroy {
 
     selectDiscount(pct: number) {
         this.selectedDiscount.set(this.selectedDiscount() === pct ? null : pct);
+        this.alertTargetPrice.set(null);
+    }
+
+    protected onAlertTargetInput(rawValue: string) {
+        const value = this.parseOptionalAmount(rawValue);
+        this.alertTargetPrice.set(value);
+
+        if (value === null) {
+            this.selectedDiscount.set(null);
+            return;
+        }
+
+        this.selectedDiscount.set(this.findMatchingDiscount(value));
+    }
+
+    protected onRenotifyDropInput(rawValue: string) {
+        this.renotifyDropAmount.set(this.parseOptionalAmount(rawValue));
+    }
+
+    private parseOptionalAmount(rawValue: string): number | null {
+        const value = rawValue.trim();
+        if (value === '') return null;
+
+        const parsed = Number(value);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    }
+
+    private findMatchingDiscount(targetPrice: number): number | null {
+        const previewPrice = this.firstPreviewPrice()?.price;
+        if (!previewPrice) return null;
+
+        return (
+            this.discountOptions.find(
+                (pct) => Math.round(previewPrice * (1 - pct / 100)) === Math.round(targetPrice),
+            ) ?? null
+        );
     }
 
     formatSelectorOnBlur(index: number) {
@@ -350,9 +392,14 @@ export class ProductForm implements OnInit, OnDestroy {
                 const product = await this.api.createProduct({ name: val.name, urls });
 
                 // Auto-create alert if a discount is selected and we have a target price
-                const target = this.targetPrice();
+                const target = this.displayedAlertTargetPrice();
                 if (target !== null && target > 0) {
-                    await this.api.createAlert(product.id, target, this.notifyBackInStock());
+                    await this.api.createAlert(
+                        product.id,
+                        target,
+                        this.notifyBackInStock(),
+                        this.renotifyDropAmount(),
+                    );
                 }
 
                 this.router.navigate(['/products', product.id]);

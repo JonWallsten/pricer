@@ -54,6 +54,19 @@ function handleAlertRoutes(string $method, string $path, array $authUser): void
             $params[':notify_bis'] = $body['notify_back_in_stock'] ? 1 : 0;
         }
 
+        if (array_key_exists('renotify_drop_amount', $body)) {
+            $repeatAmount = normalizeRenotifyDropAmount($body['renotify_drop_amount']);
+            if ($repeatAmount === false) {
+                sendJson(['error' => 'Repeat alert amount must be zero or positive'], 400);
+                return;
+            }
+
+            $fields[] = 'renotify_drop_amount = :repeat_amount';
+            $params[':repeat_amount'] = $repeatAmount;
+            $fields[] = 'last_notified_price = NULL';
+            $fields[] = 'last_notified_at = NULL';
+        }
+
         if (empty($fields)) {
             sendJson(['error' => 'No fields to update'], 400);
             return;
@@ -117,16 +130,22 @@ function handleCreateAlert(int $productId, int $userId, PDO $db): void
     }
 
     $notifyBackInStock = !empty($body['notify_back_in_stock']) ? 1 : 0;
+    $repeatAmount = normalizeRenotifyDropAmount($body['renotify_drop_amount'] ?? null);
+    if ($repeatAmount === false) {
+        sendJson(['error' => 'Repeat alert amount must be zero or positive'], 400);
+        return;
+    }
 
     $stmt = $db->prepare(
-        'INSERT INTO alerts (product_id, user_id, target_price, notify_back_in_stock)
-         VALUES (:pid, :uid, :target, :notify_bis)'
+        'INSERT INTO alerts (product_id, user_id, target_price, notify_back_in_stock, renotify_drop_amount)
+         VALUES (:pid, :uid, :target, :notify_bis, :repeat_amount)'
     );
     $stmt->execute([
-        ':pid'        => $productId,
-        ':uid'        => $userId,
-        ':target'     => $targetPrice,
-        ':notify_bis' => $notifyBackInStock,
+        ':pid'           => $productId,
+        ':uid'           => $userId,
+        ':target'        => $targetPrice,
+        ':notify_bis'    => $notifyBackInStock,
+        ':repeat_amount' => $repeatAmount,
     ]);
 
     $alertId = (int) $db->lastInsertId();
@@ -148,4 +167,25 @@ function castAlertFields(array &$alert): void
     $alert['is_active'] = (bool) $alert['is_active'];
     $alert['last_notified_price'] = $alert['last_notified_price'] !== null ? (float) $alert['last_notified_price'] : null;
     $alert['notify_back_in_stock'] = (bool) ($alert['notify_back_in_stock'] ?? false);
+    $alert['renotify_drop_amount'] = isset($alert['renotify_drop_amount'])
+        ? (float) $alert['renotify_drop_amount']
+        : null;
+}
+
+function normalizeRenotifyDropAmount($value): float|false|null
+{
+    if ($value === null || $value === '') {
+        return null;
+    }
+
+    if (!is_numeric($value)) {
+        return false;
+    }
+
+    $amount = (float) $value;
+    if ($amount < 0) {
+        return false;
+    }
+
+    return $amount > 0 ? $amount : null;
 }

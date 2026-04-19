@@ -215,12 +215,13 @@ describe('ApiService', () => {
             expect(result).toEqual(alert);
         });
 
-        it('sends target_price and notify_back_in_stock in body', async () => {
+        it('sends target_price, notify_back_in_stock and renotify_drop_amount in body', async () => {
             fetchSpy.mockReturnValue(okResponse({ alert: { id: 1 } }));
-            await service.createAlert(1, 150, true);
+            await service.createAlert(1, 150, true, 50);
             const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
             expect(body.target_price).toBe(150);
             expect(body.notify_back_in_stock).toBe(true);
+            expect(body.renotify_drop_amount).toBe(50);
         });
 
         it('throws with server error on failure', async () => {
@@ -240,11 +241,13 @@ describe('ApiService', () => {
 
         it('sends PUT to api/alerts/:id', async () => {
             fetchSpy.mockReturnValue(okResponse({ alert: { id: 10 } }));
-            await service.updateAlert(10, { is_active: true });
+            await service.updateAlert(10, { is_active: true, renotify_drop_amount: 25 });
             expect(fetchSpy).toHaveBeenCalledWith(
                 'api/alerts/10',
                 expect.objectContaining({ method: 'PUT' }),
             );
+            const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+            expect(body.renotify_drop_amount).toBe(25);
         });
     });
 

@@ -75,6 +75,7 @@ export interface Alert {
     target_price: number;
     is_active: boolean;
     notify_back_in_stock: boolean;
+    renotify_drop_amount: number | null;
     last_notified_price: number | null;
     last_notified_at: string | null;
     created_at: string;

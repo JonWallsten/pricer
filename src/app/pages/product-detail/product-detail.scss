@@ -567,8 +567,8 @@
 // ─── Alert Form ──────────────────────────────────────────
 .add-alert-form {
     display: flex;
+    flex-direction: column;
     gap: 12px;
-    align-items: flex-start;
     margin-bottom: 20px;
 
     .target-input {
@@ -579,9 +579,38 @@
     }
 
     [mat-flat-button] {
-        margin-top: 4px;
+        align-self: flex-start;
         border-radius: 14px;
     }
+}
+
+.alert-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.alert-shortcuts {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.alert-shortcuts-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.discount-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.chip-selected {
+    background: var(--mat-sys-primary) !important;
+    color: var(--mat-sys-on-primary) !important;
 }
 
 // ─── Alerts Empty State ──────────────────────────────────
@@ -677,11 +706,35 @@
 
 .alert-bottom {
     margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 
     mat-checkbox {
         --mat-checkbox-label-text-size: 13px;
         --mat-checkbox-label-text-color: var(--mat-sys-on-surface-variant);
     }
+}
+
+.alert-repeat {
+    font-size: 13px;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.alert-edit-form {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.alert-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
 }
 
 // ─── Debug Panels ────────────────────────────────────────

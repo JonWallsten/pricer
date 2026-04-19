@@ -770,16 +770,55 @@
             </div>
 
             <form [formGroup]="alertForm" (ngSubmit)="addAlert()" class="add-alert-form">
-                <mat-form-field appearance="outline" class="target-input">
-                    <mat-label>{{ i18n.strings().targetPrice }} ({{ prod.currency }})</mat-label>
-                    <input
-                        matInput
-                        type="number"
-                        formControlName="target_price"
-                        min="0.01"
-                        step="1"
-                    />
-                </mat-form-field>
+                @if (prod.current_price !== null) {
+                    <div class="alert-shortcuts">
+                        <span class="alert-shortcuts-label">
+                            {{ i18n.strings().notifyWhenDropsTo }}
+                        </span>
+                        <div class="discount-chips">
+                            @for (pct of discountOptions; track pct) {
+                                <button
+                                    mat-stroked-button
+                                    type="button"
+                                    [class.chip-selected]="
+                                        isDiscountSelected(alertForm.controls.target_price.value, pct)
+                                    "
+                                    (click)="applyDiscountToNewAlert(pct)"
+                                >
+                                    -{{ pct }}%
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                <div class="alert-form-grid">
+                    <mat-form-field appearance="outline" class="target-input">
+                        <mat-label>{{ i18n.strings().targetPrice }} ({{ prod.currency }})</mat-label>
+                        <input
+                            matInput
+                            type="number"
+                            formControlName="target_price"
+                            min="0.01"
+                            step="1"
+                        />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="target-input">
+                        <mat-label
+                            >{{ i18n.strings().repeatAlertEvery }} ({{ prod.currency }})</mat-label
+                        >
+                        <input
+                            matInput
+                            type="number"
+                            formControlName="renotify_drop_amount"
+                            min="0"
+                            step="1"
+                        />
+                        <mat-hint>{{ i18n.strings().repeatAlertHint }}</mat-hint>
+                    </mat-form-field>
+                </div>
+                <mat-checkbox formControlName="notify_back_in_stock">
+                    {{ i18n.strings().notifyBackInStock }}
+                </mat-checkbox>
                 <button
                     mat-flat-button
                     type="submit"
@@ -828,6 +867,14 @@
                                     }
                                 </div>
                                 <div class="alert-actions">
+                                    <button
+                                        mat-icon-button
+                                        type="button"
+                                        (click)="startEditingAlert(alert)"
+                                        [attr.aria-label]="i18n.strings().edit"
+                                    >
+                                        <mat-icon>edit</mat-icon>
+                                    </button>
                                     <mat-slide-toggle
                                         [checked]="alert.is_active"
                                         (change)="toggleAlert(alert)"
@@ -848,6 +895,12 @@
                                 </div>
                             </div>
                             <div class="alert-bottom">
+                                @if (alert.renotify_drop_amount) {
+                                    <span class="alert-repeat">
+                                        {{ i18n.strings().repeatAlertEvery }}
+                                        {{ formatPrice(alert.renotify_drop_amount) }}
+                                    </span>
+                                }
                                 <mat-checkbox
                                     [checked]="alert.notify_back_in_stock"
                                     (change)="toggleBackInStock(alert)"
@@ -855,6 +908,94 @@
                                     {{ i18n.strings().notifyBackInStock }}
                                 </mat-checkbox>
                             </div>
+                            @if (editingAlertId() === alert.id) {
+                                <form
+                                    [formGroup]="editAlertForm"
+                                    (ngSubmit)="saveAlert(alert)"
+                                    class="alert-edit-form"
+                                >
+                                    @if (prod.current_price !== null) {
+                                        <div class="alert-shortcuts">
+                                            <span class="alert-shortcuts-label">
+                                                {{ i18n.strings().notifyWhenDropsTo }}
+                                            </span>
+                                            <div class="discount-chips">
+                                                @for (pct of discountOptions; track pct) {
+                                                    <button
+                                                        mat-stroked-button
+                                                        type="button"
+                                                        [class.chip-selected]="
+                                                            isDiscountSelected(
+                                                                editAlertForm.controls.target_price
+                                                                    .value,
+                                                                pct
+                                                            )
+                                                        "
+                                                        (click)="applyDiscountToEditingAlert(pct)"
+                                                    >
+                                                        -{{ pct }}%
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="alert-form-grid">
+                                        <mat-form-field appearance="outline">
+                                            <mat-label
+                                                >{{ i18n.strings().targetPrice }} ({{
+                                                    prod.currency
+                                                }})</mat-label
+                                            >
+                                            <input
+                                                matInput
+                                                type="number"
+                                                formControlName="target_price"
+                                                min="0.01"
+                                                step="1"
+                                            />
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline">
+                                            <mat-label
+                                                >{{ i18n.strings().repeatAlertEvery }} ({{
+                                                    prod.currency
+                                                }})</mat-label
+                                            >
+                                            <input
+                                                matInput
+                                                type="number"
+                                                formControlName="renotify_drop_amount"
+                                                min="0"
+                                                step="1"
+                                            />
+                                            <mat-hint>{{
+                                                i18n.strings().repeatAlertHint
+                                            }}</mat-hint>
+                                        </mat-form-field>
+                                    </div>
+                                    <mat-checkbox formControlName="notify_back_in_stock">
+                                        {{ i18n.strings().notifyBackInStock }}
+                                    </mat-checkbox>
+                                    <div class="alert-edit-actions">
+                                        <button
+                                            mat-button
+                                            type="button"
+                                            (click)="cancelEditingAlert()"
+                                        >
+                                            {{ i18n.strings().cancel }}
+                                        </button>
+                                        <button
+                                            mat-flat-button
+                                            type="submit"
+                                            [disabled]="
+                                                editAlertForm.invalid ||
+                                                savingAlertId() === alert.id
+                                            "
+                                        >
+                                            {{ i18n.strings().save }}
+                                        </button>
+                                    </div>
+                                </form>
+                            }
                         </div>
                     }
                 </div>

@@ -53,6 +53,8 @@ interface I18nStrings {
     alerts: string;
     addAlert: string;
     targetPrice: string;
+    repeatAlertEvery: string;
+    repeatAlertHint: string;
     activeAlert: string;
     activeAlerts: string;
     noAlerts: string;
@@ -285,6 +287,8 @@ const en: I18nStrings = {
     alerts: 'Alerts',
     addAlert: 'Add alert',
     targetPrice: 'Target price',
+    repeatAlertEvery: 'Alert again every extra drop',
+    repeatAlertHint: 'Optional. Leave empty to alert on every new lower price.',
     activeAlert: 'active alert',
     activeAlerts: 'active alerts',
     noAlerts: 'No alerts yet',
@@ -510,6 +514,8 @@ const sv: I18nStrings = {
     alerts: 'Bevakningar',
     addAlert: 'Lägg till bevakning',
     targetPrice: 'Målpris',
+    repeatAlertEvery: 'Notifiera igen för varje extra sänkning',
+    repeatAlertHint: 'Valfritt. Lämna tomt för att meddela vid varje nytt lägre pris.',
     activeAlert: 'aktiv bevakning',
     activeAlerts: 'aktiva bevakningar',
     noAlerts: 'Inga bevakningar ännu',

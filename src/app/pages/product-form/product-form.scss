@@ -123,6 +123,12 @@
     flex-wrap: wrap;
 }
 
+.alert-settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
 .chip-selected {
     background: var(--mat-sys-primary) !important;
     color: var(--mat-sys-on-primary) !important;

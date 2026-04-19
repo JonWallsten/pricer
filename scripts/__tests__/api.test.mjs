@@ -321,20 +321,23 @@ describe('Alerts', () => {
     it('POST /products/:id/alerts creates an alert', async () => {
         const { status, data } = await api('POST', `/products/${productId}/alerts`, {
             token: jwt,
-            body: { target_price: 99.99 },
+            body: { target_price: 99.99, notify_back_in_stock: true, renotify_drop_amount: 50 },
         });
         expect(status).toBe(201);
         expect(data.alert.target_price).toBe(99.99);
+        expect(data.alert.notify_back_in_stock).toBe(true);
+        expect(data.alert.renotify_drop_amount).toBe(50);
         alertId = data.alert.id;
     });
 
     it('PUT /alerts/:id updates the alert', async () => {
         const { status, data } = await api('PUT', `/alerts/${alertId}`, {
             token: jwt,
-            body: { target_price: 79.99, is_active: false },
+            body: { target_price: 79.99, is_active: false, renotify_drop_amount: 25 },
         });
         expect(status).toBe(200);
         expect(data.alert.target_price).toBe(79.99);
+        expect(data.alert.renotify_drop_amount).toBe(25);
     });
 
     it('DELETE /alerts/:id removes the alert', async () => {
