@@ -441,7 +441,11 @@
             } @else if (filteredMatches().length === 0) {
                 <div class="alerts-empty matches-empty">
                     <mat-icon class="empty-icon">travel_explore</mat-icon>
-                    <p class="matches-empty-hint">{{ i18n.strings().noMatchesHint }}</p>
+                    @if (hasSearchedMatches()) {
+                        <p class="matches-empty-title">{{ i18n.strings().noMatches }}</p>
+                    } @else {
+                        <p class="matches-empty-hint">{{ i18n.strings().noMatchesHint }}</p>
+                    }
                 </div>
             } @else {
                 <div class="match-list">

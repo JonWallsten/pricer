@@ -6,8 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-04-19
+
 ### Added
 
+- **Editable alert settings**: existing alerts can now be edited in place on the product detail page instead of only being toggled or deleted
+- **Repeated price alerts**: alerts now support an optional `renotify_drop_amount` value so notifications can repeat for each additional price drop band (for example 1000 → 950 → 900); migration 014 adds the new column to `alerts`
+- **Discount shortcuts in alert management**: the same 5%, 10%, 25%, and 50% target-price chips are now available when creating and editing alerts on the product detail page
+- **Clickable price chart points**: Chart.js history graphs now let users click/tap near a datapoint to lock the tooltip to the nearest recorded price
 - **Selector picker flow for match URLs**: clicking "Track" on a match candidate adds the URL and automatically opens the page inspector in pick mode if price extraction fails — user can pick a CSS selector, then choose whether to use it as a fallback (auto strategy) or as the sole extraction method (selector strategy); cancelling at any step keeps the URL in auto mode; a new "Pick selector" option in the URL menu allows triggering this flow manually on any tracked URL
 - **PATCH /products/:id/urls/:urlId endpoint**: update `css_selector` and `extraction_strategy` on individual tracked URLs
 - **Admin debug mode**: toolbar toggle (bug icon, admin-only) that reveals match discovery internals on the product detail page — search queries with copy-to-clipboard, source normalization (title, brand, model, MPN, GTIN, SKU, tokens), per-match score breakdown (title similarity, brand/model/GTIN/MPN/color/dimensions/price scores, penalties), SERP position, and extracted candidate identifiers
@@ -17,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Local schema compatibility for product detail**: product pages no longer bounce back to the dashboard on localhost if migration 014 has not been applied yet; alert responses now tolerate the missing `renotify_drop_amount` column while the local database is catching up
+- **Match empty-state wording**: the cross-store matches section now distinguishes between "not searched yet" and "searched with no results" instead of implying a failed search on first load
 - **Match dismiss 404**: `listProductMatches` was returning `excluded=1` matches when `$includeWeak=true`, causing a page refresh to re-show dismissed matches. Clicking dismiss a second time returned HTTP 404 because MySQL reports 0 affected rows when the value doesn't change. Fixed by always filtering `excluded = 0` in the list query and making the PATCH handler idempotent (checks existence instead of row count).
 - **Matches invisible after discovery**: discovery auto-set `excluded = 1` for matches with score < 50, and `ON DUPLICATE KEY UPDATE` overwrote the user's manual dismiss/un-dismiss on re-discovery. Fixed: `excluded` now defaults to `0` on insert and is never overwritten by re-discovery — it only changes via explicit user action.
 - **CORS**: added `PATCH` to `Access-Control-Allow-Methods` header so match-dismiss requests are no longer blocked by the browser preflight check
@@ -24,6 +32,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **Alert setup flow**: the add-product shortcut now uses the same alert settings model as the detail page, including custom target price, in-stock-only mode, and optional repeated-alert threshold
+- **Product form URL layout**: extraction method now appears before CSS selector, helper text wraps more cleanly, and spacing between controls has been refined for multiline hints
+- **Cross-store matches presentation**: the header/button alignment and empty-state copy have been simplified so the panel feels less noisy before and after discovery
 - **Cross-store discovery quality**: only one match per domain is kept (highest-scoring wins), and script-pattern extraction (WebComponents, **NEXT_DATA**, etc.) is used as a price fallback when structured data has no price
 - **Discovery returns more matches**: relaxed candidate filter from requiring an extracted price to accepting any commerce signal (price, availability, or SKU) — lets through webshops where our scraper can't extract the price while still blocking manufacturer/supplier info pages; increased candidate limit from 5 to 8; early break now requires 3+ strong matches instead of just 1
 

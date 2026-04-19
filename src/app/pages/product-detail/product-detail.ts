@@ -93,6 +93,7 @@ export class ProductDetail implements OnInit, OnDestroy {
     protected readonly matches = signal<ProductMatchCandidate[]>([]);
     protected readonly matchesLoading = signal(false);
     protected readonly discoveringMatches = signal(false);
+    protected readonly hasSearchedMatches = signal(false);
     protected readonly matchesError = signal<string | null>(null);
     protected readonly addingMatchUrls = signal<Set<string>>(new Set());
     protected readonly lastDiscoveryResult = signal<ProductMatchDiscoveryResponse | null>(null);
@@ -201,8 +202,9 @@ export class ProductDetail implements OnInit, OnDestroy {
         const textStrong = this.resolveThemeColor('--mat-sys-on-surface', '#111827');
         const grid = this.resolveThemeColor('--mat-sys-outline-variant', '#d1d5db');
         const primaryFill = this.withAlpha(primary, 0.18);
-        const pointRadius = data.length === 1 ? 7 : data.length > 30 ? 0 : 4;
-        const pointHoverRadius = Math.max(pointRadius + 2, 7);
+        const pointRadius = data.length === 1 ? 7 : data.length > 30 ? 2 : 5;
+        const pointHoverRadius = Math.max(pointRadius + 3, 8);
+        const pointHitRadius = Math.max(pointRadius + 10, 18);
         const suggestedMin = Math.min(...prices);
         const suggestedMax = Math.max(...prices);
         const span = Math.max(suggestedMax - suggestedMin, suggestedMax * 0.06, 10);
@@ -222,6 +224,7 @@ export class ProductDetail implements OnInit, OnDestroy {
                         borderWidth: 3,
                         pointRadius,
                         pointHoverRadius,
+                        pointHitRadius,
                         pointBackgroundColor: primary,
                         pointBorderColor: this.withAlpha(textStrong, 0.9),
                         pointBorderWidth: data.length === 1 ? 3 : 2,
@@ -232,6 +235,42 @@ export class ProductDetail implements OnInit, OnDestroy {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false,
+                },
+                onClick: (event, _elements, chart) => {
+                    if (!(event.native instanceof Event)) {
+                        return;
+                    }
+
+                    const nearest = chart.getElementsAtEventForMode(
+                        event.native,
+                        'nearest',
+                        { intersect: false, axis: 'x' },
+                        false,
+                    );
+
+                    if (nearest.length === 0) {
+                        chart.setActiveElements([]);
+                        chart.tooltip?.setActiveElements([], { x: 0, y: 0 });
+                        chart.update();
+                        return;
+                    }
+
+                    const activeElements = nearest.map((item) => ({
+                        datasetIndex: item.datasetIndex,
+                        index: item.index,
+                    }));
+                    const first = nearest[0].element;
+                    chart.setActiveElements(activeElements);
+                    chart.tooltip?.setActiveElements(activeElements, {
+                        x: first.x,
+                        y: first.y,
+                    });
+                    chart.update();
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -396,6 +435,7 @@ export class ProductDetail implements OnInit, OnDestroy {
     async discoverMatches(force = false) {
         this.discoveringMatches.set(true);
         this.matchesError.set(null);
+        this.hasSearchedMatches.set(true);
         try {
             const result = await this.api.discoverProductMatches(Number(this.id()), force);
             this.matches.set(result.matches);

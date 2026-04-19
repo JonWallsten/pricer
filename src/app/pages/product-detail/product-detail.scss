@@ -483,6 +483,12 @@
     text-align: center;
 }
 
+.matches-empty-title {
+    font-size: 16px !important;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface) !important;
+}
+
 .matches-empty-hint {
     max-width: 34ch;
 }
@@ -606,6 +612,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-bottom: 4px;
 }
 
 .alert-shortcuts-label {
